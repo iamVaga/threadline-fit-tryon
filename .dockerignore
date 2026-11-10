@@ -1,0 +1,10 @@
+.git
+.venv
+.local
+**/__pycache__
+.env*
+photos
+*.xlsx
+render_log.csv
+*.task
+*.tflite

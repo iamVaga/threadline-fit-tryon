@@ -1,0 +1,9 @@
+.venv/
+.local/
+__pycache__/
+.env*
+render_log.csv
+photos/
+*.xlsx
+*.task
+*.tflite

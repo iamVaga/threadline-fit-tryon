@@ -1,0 +1,265 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Threadline Fit & Try-On</title>
+<style>
+:root{--bg:#faf8f5;--card:#fff;--tx:#1d1b19;--mu:#6b655e;--ac:#8a2b4a;--ln:#e6e0d8;--ok:#1f7a4d;--wa:#b4630a;--bad:#b3261e;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171514;--card:#211f1d;--tx:#f1ede8;--mu:#a39c93;--ac:#e08aa8;--ln:#35312d;--ok:#5fcf97;--wa:#f0a84a;--bad:#ff8a80}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:720px;margin:0 auto;padding:12px 14px 40px}
+h1{font-size:19px;margin:8px 0 2px}h2{font-size:16px;margin:0 0 8px}p{margin:6px 0}.mu{color:var(--mu);font-size:13px}
+nav{display:flex;gap:6px;margin:10px 0}nav button{flex:1;min-height:44px;border:1px solid var(--ln);background:var(--card);color:var(--tx);border-radius:10px;font-weight:600}
+nav button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:14px;margin:10px 0}
+label{display:block;font-size:13px;color:var(--mu);margin:10px 0 4px}
+select,input[type=number]{width:100%;min-height:44px;border:1px solid var(--ln);border-radius:10px;padding:0 10px;background:var(--bg);color:var(--tx);font-size:15px}
+.btn{min-height:46px;width:100%;border:0;border-radius:12px;background:var(--ac);color:#fff;font-weight:700;font-size:15px;margin-top:12px}.btn.s{background:transparent;color:var(--ac);border:1px solid var(--ac)}.btn:disabled{opacity:.4}
+.size{display:flex;align-items:center;gap:12px}.badge{font-size:34px;font-weight:800;color:var(--ac);min-width:72px;text-align:center;border:2px solid var(--ac);border-radius:14px;padding:6px 0}
+.bar{height:8px;background:var(--ln);border-radius:6px;overflow:hidden}.bar i{display:block;height:100%;background:var(--ok)}
+.row{display:flex;align-items:center;gap:10px;margin:8px 0}.sw{width:100%;aspect-ratio:3/4;border-radius:12px;display:grid;place-items:center;color:#fff;font-weight:700;text-align:center;padding:10px}
+.tog{display:flex;gap:10px;align-items:flex-start;margin:10px 0}.tog input{width:22px;height:22px;margin-top:2px}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;border:1px solid}.t1{color:var(--bad)}.t2{color:var(--wa)}.t3{color:var(--ok)}
+.wrap{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:7px 6px;border-bottom:1px solid var(--ln);text-align:left;white-space:nowrap}
+.lab{font-size:12px;background:#000a;color:#fff;padding:4px 8px;border-radius:6px;margin-top:6px}
+canvas{max-width:100%;border-radius:12px}.hid{display:none}.warn{border-left:4px solid var(--wa)}
+</style></head><body><main>
+<h1>Threadline Fit & Try-On</h1><div class="mu">Women’s kurtas · prototype built on the PS-13 synthetic data</div>
+<nav><button class="on" data-t="shop">Shop</button><button data-t="fit">Fit & Returns</button><button data-t="res">Results</button></nav>
+
+<section id="shop">
+ <div class="card"><div class="row"><div style="width:38%"><div class="sw" id="sw">Kurta</div></div><div style="flex:1"><h2 id="pn">Mustard straight kurta</h2>
+ <label for="tb">Brand</label><select id="tb"></select>
+ <label for="ft">Garment fit label</label><select id="ft"><option>Regular</option><option>Slim</option><option>Relaxed</option></select>
+ <label for="co">Colour</label><select id="co"><option value="#c58a12">Mustard</option><option value="#2f6f9f">Sky blue</option><option value="#6d4aa0">Lavender</option><option value="#9c2f3e">Maroon</option></select></div></div></div>
+
+ <div class="card"><h2>Find my size <span class="mu">(2 quick questions)</span></h2>
+ <label for="us">1. Your usual top size</label><select id="us"><option value="">Not sure</option><option>XS</option><option>S</option><option selected>M</option><option>L</option><option>XL</option><option>XXL</option><option>3XL</option></select>
+ <label for="ub">…in which brand? (helps a lot)</label><select id="ub"></select>
+ <label for="fp">2. How do you like kurtas to fit?</label><select id="fp"><option value="-0.3">Snug</option><option value="0" selected>Regular</option><option value="0.3">Roomy</option></select>
+ <details><summary class="mu" style="min-height:44px;line-height:44px">Optional: add my bust (cm)</summary><label for="bu">Bust, cm — used only with the separate consent below</label><input id="bu" type="number" inputmode="decimal" min="60" max="140" placeholder="e.g. 92"></details>
+ <button class="btn" id="go">Recommend my size</button>
+ <div id="out" class="hid" style="margin-top:14px"><div class="size"><div class="badge" id="sz">M</div><div style="flex:1"><b id="cf"></b><div class="bar"><i id="cb"></i></div><div class="mu" id="rs" style="margin-top:6px"></div></div></div><div class="mu" id="cmp" style="margin-top:8px"></div></div></div>
+
+ <div class="card"><h2>See it on me <span class="tag t2">Simulated preview</span></h2>
+ <p class="mu">Photo and measurements are optional and never needed to shop. Each is a separate choice.</p>
+ <div class="tog"><input type="checkbox" id="c1" disabled><label for="c1" style="margin:0;color:var(--tx)">I agree to send my photo for this preview. <span class="mu" id="photoPrivacy">Threadline checks the photo and clears its copies when I delete them or within 24 hours.</span></label></div>
+ <div id="teamAccess" class="hid"><label for="teamCode">Team access code</label><input id="teamCode" type="password" autocomplete="off" maxlength="256"></div>
+ <div class="tog"><input type="checkbox" id="c2"><label for="c2" style="margin:0;color:var(--tx)">I agree to use my bust measurement for size advice in this tab.</label></div>
+ <label for="ag">Age (photo try-on is for 18+)</label><input id="ag" type="number" inputmode="numeric" min="5" max="99" placeholder="e.g. 27">
+ <label for="ph">Full-body photo, head to feet, one person, good light</label><input id="ph" type="file" accept="image/jpeg,image/png,image/webp" capture="user" disabled style="min-height:44px">
+ <label for="gf">Kurta image (upload, or pick one below)</label><input id="gf" type="file" accept="image/jpeg,image/png,image/webp" style="min-height:44px"><select id="gs"><option value="">— or choose a sample kurta —</option></select>
+ <div id="msg" class="mu" role="status"></div>
+ <button class="btn" id="rn" disabled>See it on me</button><button class="btn s" id="del">Delete my photo and data</button>
+ <canvas id="cv" class="hid"></canvas><div class="lab hid" id="lb">Simulated preview — fit, colour and drape may differ from the actual product.</div>
+ <p class="mu hid" id="note">Size advice is shown separately above. This image is not evidence of size.</p></div>
+ <div class="card warn mu">The photo check runs before any model call. If real try-on is unavailable, the preview shows your original photo with a placeholder label. Size advice stays separate.</div>
+</section>
+
+<section id="fit" class="hid">
+ <div class="card"><h2>Kurta brands by size-return rate</h2><p class="mu">Jan–Sep 2026 sample. “Direction” comes from too small vs too large returns. “Chart gap” is how far the published chart disagrees with what customers keep, in sizes (a wrong chart ≈ 1 size or more).</p>
+ <div class="wrap"><table id="bt"></table></div></div>
+ <div class="card"><h2>Draft messages to brands</h2><p class="mu">Aggregated evidence only. No individual data is shared.</p><div id="ms"></div></div>
+</section>
+
+<section id="res" class="hid"><div id="rb"></div></section>
+</main>
+<script>
+const D={"gam":[0.15023497396970967,-0.149789173429258,-0.029772310083129687],"bust":[0.1707663609187399,-13.546265834220474],"sub":{"n":1830,"usual":75.5,"model":86.0,"ex_n":254,"ex_usual":14.6,"ex_model":53.1},"impact":{"lines":9923,"srn":2559,"rel":0.429,"sc":[{"adopt":0.3,"avoided":8225,"inr_cr":0.1},{"adopt":0.5,"avoided":13709,"inr_cr":0.16},{"adopt":0.8,"avoided":21934,"inr_cr":0.26}]},"ab":{"n":40529,"sessions":5078,"conv":0.0451},"brands":[{"brand":"Kesar Lane","b":0.84,"ret":40.2,"tl":1.7,"ts":36.8,"gap":-1.27,"lines":692,"flag":true,"msg":"Kesar Lane: 36.8% of kurta orders come back 'too small' (peer median ~5%). Your kurtas run about one size small; shoppers who follow your chart pick one size too small. Suggest re-grading the chart or adding 'size up'."},{"brand":"Mitti & Mor","b":0.84,"ret":38.4,"tl":2.7,"ts":33.6,"gap":-1.45,"lines":565,"flag":true,"msg":"Mitti & Mor: 33.6% of kurta orders come back 'too small' (peer median ~5%). Your kurtas run about one size small; shoppers who follow your chart pick one size too small. Suggest re-grading the chart or adding 'size up'."},{"brand":"Sutra Nine","b":0.75,"ret":35.7,"tl":2.9,"ts":27.4,"gap":-1.49,"lines":649,"flag":true,"msg":"Sutra Nine: 27.4% of kurta orders come back 'too small' (peer median ~5%). Your kurtas run about one size small; shoppers who follow your chart pick one size too small. Suggest re-grading the chart or adding 'size up'."},{"brand":"Chandni Lane","b":-0.21,"ret":30.3,"tl":24.9,"ts":0.8,"gap":-0.03,"lines":598,"flag":"True","msg":"Chandni Lane: 24.9% of kurta orders come back 'too large' (peer median ~9%). Your kurtas run about one size large. Suggest re-checking garment measurements and the chart."},{"brand":"Jharokha","b":-0.48,"ret":28.0,"tl":21.4,"ts":3.0,"gap":0.68,"lines":542,"flag":"True","msg":"Jharokha: 21.4% of kurta orders come back 'too large' (peer median ~9%). Your kurtas run about one size large. Suggest re-checking garment measurements and the chart."},{"brand":"Ilaayi","b":-0.36,"ret":25.4,"tl":14.3,"ts":7.1,"gap":0.9,"lines":448,"flag":"False","msg":""},{"brand":"Saanjh","b":-0.19,"ret":24.3,"tl":15.1,"ts":5.8,"gap":0.18,"lines":502,"flag":"False","msg":""},{"brand":"Vastrika","b":-0.13,"ret":23.3,"tl":7.8,"ts":10.0,"gap":0.44,"lines":601,"flag":"False","msg":""},{"brand":"Phulkari House","b":-0.21,"ret":22.9,"tl":12.4,"ts":5.5,"gap":0.04,"lines":780,"flag":"False","msg":""},{"brand":"Aarvi","b":-0.21,"ret":22.3,"tl":13.6,"ts":3.1,"gap":0.18,"lines":641,"flag":"False","msg":""},{"brand":"Neelkanth","b":-0.2,"ret":22.3,"tl":9.6,"ts":8.0,"gap":0.27,"lines":623,"flag":"False","msg":""},{"brand":"Kaashi Weave","b":-0.09,"ret":22.2,"tl":4.5,"ts":12.7,"gap":0.28,"lines":772,"flag":"False","msg":""},{"brand":"Rangrez Studio","b":-0.17,"ret":20.7,"tl":11.6,"ts":3.3,"gap":0.08,"lines":646,"flag":"False","msg":""},{"brand":"Noor & Neel","b":0.0,"ret":20.1,"tl":9.1,"ts":6.3,"gap":0.01,"lines":695,"flag":"False","msg":""},{"brand":"Ambar","b":-0.07,"ret":18.7,"tl":7.6,"ts":4.0,"gap":0.13,"lines":683,"flag":"False","msg":""},{"brand":"Dhaaga","b":-0.13,"ret":18.3,"tl":9.5,"ts":5.1,"gap":0.01,"lines":486,"flag":"False","msg":""}],"met":{"overall":{"n":2841,"exact":67.1,"within":84.5,"usual":48.6,"first":86.2},"by_src":{"Kept after exchange":{"n":390,"exact":42.3,"within":53.1,"usual":9.5,"first":0.0},"Kept first size":{"n":2451,"exact":71.0,"within":89.5,"usual":54.9,"first":99.9}},"by_cat":{"Men \u00b7 Jeans":{"n":236,"exact":65.7,"within":85.2,"usual":40.7,"first":91.5},"Men \u00b7 Kurtas":{"n":139,"exact":65.5,"within":78.4,"usual":46.0,"first":77.7},"Men \u00b7 Shirts":{"n":425,"exact":65.9,"within":85.9,"usual":53.2,"first":86.4},"Men \u00b7 T-shirts":{"n":375,"exact":70.1,"within":89.6,"usual":59.7,"first":90.1},"Women \u00b7 Dresses":{"n":331,"exact":69.5,"within":82.8,"usual":52.3,"first":85.8},"Women \u00b7 Jeans":{"n":249,"exact":55.8,"within":73.1,"usual":34.1,"first":85.1},"Women \u00b7 Kurtas":{"n":574,"exact":70.0,"within":84.1,"usual":42.5,"first":83.3},"Women \u00b7 Tops":{"n":512,"exact":67.6,"within":87.9,"usual":52.7,"first":87.1}},"by_hist":{"1 kept item":{"n":392,"exact":63.0,"within":82.7,"usual":48.2,"first":87.2},"2-3":{"n":713,"exact":67.9,"within":85.8,"usual":53.0,"first":88.6},"4+":{"n":1242,"exact":73.3,"within":88.5,"usual":48.5,"first":84.7},"no history":{"n":494,"exact":53.4,"within":73.9,"usual":43.1,"first":85.6}}}};const L=['XS','S','M','L','XL','XXL','3XL'];const $=i=>document.getElementById(i);
+const B={};D.brands.forEach(b=>B[b.brand]=b);
+$('tb').innerHTML=D.brands.map(b=>`<option>${b.brand}</option>`).join('');
+$('ub').innerHTML='<option value="">Not sure / other brand</option>'+D.brands.map(b=>`<option>${b.brand}</option>`).join('');
+$('tb').value='Vastrika';
+function sw(){$('sw').style.background=$('co').value;$('sw').textContent=$('co').selectedOptions[0].text+' kurta';$('pn').textContent=$('co').selectedOptions[0].text+' straight kurta'}
+$('co').onchange=sw;sw();
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));['shop','fit','res'].forEach(s=>$(s).classList.toggle('hid',s!==b.dataset.t))});
+function rec(){
+ const tb=$('tb').value,bT=B[tb].b,ft=$('ft').value,g=D.gam,fp=+$('fp').value;
+ const us=$('us').value,ub=$('ub').value,bust=parseFloat($('bu').value),use=$('c2').checked&&bust>0;
+ let us_=[],why=[],info=0;
+ if(us){const i=L.indexOf(us);if(ub){us_.push(i-B[ub].b);info+=.08;why.push(`You wear ${us} in ${ub}, which runs ${B[ub].b>0.3?'small':B[ub].b<-0.3?'large':'about true'}`)}else{us_.push(.874*i+.176);why.push(`You usually wear ${us}`)}}
+ if(use){us_.push(D.bust[0]*bust+D.bust[1]);info+=.07;why.push(`bust ${bust} cm`)}
+ if(!us_.length){us_.push(2);why.push('No size info yet, so this is a starting point (M)')}
+ const u=us_.reduce((a,b)=>a+b)/us_.length;
+ let y=u+bT+fp+(ft==='Slim'?g[0]:ft==='Relaxed'?g[1]:0);
+ let k=Math.max(0,Math.min(6,Math.round(y)));const d=Math.abs(y-Math.round(y));
+ const conf=Math.max(.4,Math.min(.8,.5+.25*(1-2*d)+info+(us_.length>1?.04:0)));
+ $('sz').textContent=L[k];$('cf').textContent=`Confidence ${Math.round(conf*100)}%`;$('cb').style.width=conf*100+'%';
+ const dir=bT>0.3?`${tb} runs small, so we sized up`:bT<-0.3?`${tb} runs large, so we sized down`:`${tb} is close to true to size`;
+ $('rs').textContent=why.join(', ')+'. '+dir+(Math.abs(y-Math.round(y))>.35?'. You are between sizes; '+(y>Math.round(y)?L[Math.min(6,k+1)]:L[Math.max(0,k-1)])+' is the next-best choice.':'.');
+ const o=ub&&us?`You’re ${us} in ${ub} and ${L[k]} in ${tb}.`:'';
+ $('cmp').textContent=o;$('out').classList.remove('hid');
+}
+$('go').onclick=rec;
+// consent + photo
+const SID = crypto.randomUUID();
+let pendingRender = null, deleting = false, generation = 0, expiry = 0, photoExpiry = 0;
+let photoConfigLoaded = false, remoteBackend = null;
+const day = 24 * 60 * 60 * 1000;
+const adult = () => Number.isInteger(Number($('ag').value)) && Number($('ag').value) >= 18;
+
+function sync() {
+  $('ph').disabled = !photoConfigLoaded || !$('c1').checked || !adult() || deleting ||
+    (remoteBackend && !$('teamCode').value);
+  $('rn').disabled = $('ph').disabled || !!pendingRender || !$('ph').files[0] ||
+    !($('gf').files[0] || $('gs').value);
+  $('del').disabled = deleting;
+}
+function clearPreview() {
+  generation += 1;
+  clearTimeout(expiry);
+  $('cv').width = 0;
+  for (const id of ['cv', 'lb', 'note']) $(id).classList.add('hid');
+}
+async function erasePhoto() {
+  if (deleting) return;
+  deleting = true;
+  clearTimeout(photoExpiry);
+  clearPreview();
+  $('ph').value = '';
+  sync();
+  try {
+    if (pendingRender) await pendingRender;
+    const body = new FormData();
+    body.append('session', SID);
+    const response = await fetch('/api/delete', {method: 'POST', body});
+    if (!response.ok || !(await response.json()).deleted) throw new Error();
+    $('msg').textContent = 'Threadline deleted the photo and preview from this tab and its server.';
+  } catch {
+    $('msg').textContent = 'The local preview was cleared. Server deletion could not be confirmed. Please try again.';
+  } finally {
+    deleting = false;
+    sync();
+  }
+}
+$('ag').oninput = () => {
+  if (!adult() && $('ph').files[0]) erasePhoto();
+  sync();
+};
+$('c1').onchange = () => {
+  if (!$('c1').checked) erasePhoto();
+  sync();
+};
+$('c2').onchange = () => {
+  if (!$('c2').checked) {
+    $('bu').value = '';
+    $('out').classList.add('hid');
+  }
+  $('bu').disabled = !$('c2').checked;
+};
+$('c2').onchange();
+for (const id of ['ph', 'gf', 'gs']) {
+  $(id).onchange = () => {
+    if (id === 'ph') {
+      clearTimeout(photoExpiry);
+      if ($('ph').files[0]) photoExpiry = setTimeout(erasePhoto, day);
+    }
+    clearPreview();
+    $('msg').textContent = '';
+    sync();
+  };
+}
+fetch('/api/garments').then(r => r.json()).then(names => {
+  for (const name of names) $('gs').add(new Option(name, name));
+}).catch(() => {});
+$('teamCode').oninput = sync;
+fetch('/api/tryon-config').then(response => {
+  if (!response.ok) throw new Error();
+  return response.json();
+}).then(config => {
+  remoteBackend = config.remote_backend;
+  if (remoteBackend) {
+    const provider = remoteBackend === 'hf' ? 'Hugging Face' : 'Replicate';
+    $('photoPrivacy').textContent = `I am a consenting adult team member. Threadline sends my photo to ${provider}, a third-party model host, to create the preview. Threadline deletes its copies on request or within 24 hours. The host may retain or log the photo.`;
+    $('teamAccess').classList.remove('hid');
+  }
+  photoConfigLoaded = true;
+  $('c1').disabled = false;
+  sync();
+}).catch(() => {
+  $('msg').textContent = 'Photo preview is temporarily unavailable. Reload the page to try again.';
+});
+$('rn').onclick = async () => {
+  if ($('rn').disabled) return;
+  clearPreview();
+  const requestGeneration = generation;
+  const body = new FormData();
+  body.append('session', SID);
+  body.append('age', String(Number($('ag').value)));
+  body.append('consent_photo', 'true');
+  if (remoteBackend) {
+    body.append('consent_remote', remoteBackend);
+    body.append('team_code', $('teamCode').value);
+  }
+  body.append('desc', $('co').selectedOptions[0].text + ' kurta');
+  body.append('photo', $('ph').files[0]);
+  if ($('gf').files[0]) body.append('garment', $('gf').files[0]);
+  else body.append('garment_name', $('gs').value);
+  $('msg').textContent = 'Checking the photo and preparing the preview…';
+  pendingRender = (async () => {
+    try {
+      const response = await fetch('/api/tryon', {method: 'POST', body});
+      const result = await response.json();
+      if (requestGeneration !== generation) return;
+      if (!response.ok) {
+        $('msg').textContent = result.error || 'Could not prepare the preview.';
+        return;
+      }
+      const image = new Image();
+      image.src = result.image;
+      await image.decode();
+      if (requestGeneration !== generation) return;
+      const canvas = $('cv');
+      canvas.width = image.width;
+      canvas.height = image.height;
+      canvas.getContext('2d').drawImage(image, 0, 0);
+      for (const id of ['cv', 'lb', 'note']) $(id).classList.remove('hid');
+      const reason = {
+        mock_mode: 'Demo mode is active.',
+        model_unavailable: 'The try-on model is unavailable.',
+        preservation_check: 'The preview did not pass the clothing-only check.'
+      }[result.placeholder_reason];
+      $('msg').textContent = result.mock
+        ? `${reason || 'Try-on is unavailable.'} PLACEHOLDER · original photo. Preview ${result.renders_used} of 3.`
+        : `Done in ${result.latency_s}s. Preview ${result.renders_used} of 3.`;
+      expiry = setTimeout(() => {
+        clearPreview();
+        $('ph').value = '';
+        sync();
+      }, day);
+    } catch {
+      if (requestGeneration === generation) $('msg').textContent = 'Could not reach the try-on server. Please try again.';
+    }
+  })();
+  sync();
+  await pendingRender;
+  pendingRender = null;
+  sync();
+};
+$('del').onclick = () => {
+  $('c1').checked = false;
+  $('c2').checked = false;
+  $('c2').onchange();
+  $('ag').value = '';
+  $('gf').value = '';
+  $('gs').value = '';
+  erasePhoto();
+};
+sync();
+// fit & returns
+const dirOf=b=>b.ts-b.tl>8?['Runs small','t1']:b.tl-b.ts>8?['Runs large','t1']:['Near true','t3'];
+$('bt').innerHTML='<tr><th>Brand</th><th>Size returns</th><th>Too small</th><th>Too large</th><th>Direction</th><th>Chart gap</th><th>Chart</th></tr>'+D.brands.map(b=>{const d=dirOf(b);const bad=Math.abs(b.gap)>=1||b.tl>=20||b.ts>=20;return `<tr><td>${b.brand}</td><td>${b.ret}%</td><td>${b.ts}%</td><td>${b.tl}%</td><td><span class="tag ${d[1]}">${d[0]}</span></td><td>${b.gap>0?'+':''}${b.gap}</td><td>${bad?'<span class="tag t1">Unreliable</span>':'OK'}</td></tr>`}).join('');
+$('ms').innerHTML=D.brands.filter(b=>b.msg).map(b=>`<p>${b.msg}</p>`).join('');
+// results
+const m=D.met,s=D.sub,im=D.impact,ab=D.ab,r=x=>`<tr><td>${x[0]}</td><td>${x[1]}</td><td>${x[2]}</td><td>${x[3]}</td></tr>`;
+const cat=Object.entries(m.by_cat).map(([k,v])=>r([k.replace('·','·'),v.n,v.exact+'%',v.within+'%'])).join('');
+$('rb').innerHTML=`<div class="card"><h2>Recommender, October test (2,841 cases)</h2><div class="wrap"><table><tr><th>Slice</th><th>Cases</th><th>Exact</th><th>Within acceptable</th></tr>
+${r(['All',m.overall.n,m.overall.exact+'%',m.overall.within+'%'])}${r(['Kept first size',m.by_src['Kept first size'].n,m.by_src['Kept first size'].exact+'%',m.by_src['Kept first size'].within+'%'])}${r(['Kept after exchange',m.by_src['Kept after exchange'].n,m.by_src['Kept after exchange'].exact+'%',m.by_src['Kept after exchange'].within+'%'])}${r(['No history',m.by_hist['no history'].n,m.by_hist['no history'].exact+'%',m.by_hist['no history'].within+'%'])}${cat}</table></div>
+<p><b>Targets: ≥85% overall and ≥60% on Kept after exchange. Result: ${m.overall.within}% and ${m.by_src['Kept after exchange'].within}%, so both targets are narrowly or clearly missed.</b></p>
+<p class="mu">Baseline “usual size” (${s.n} cases with a stated usual size): ${s.usual}% vs our ${s.model}% on the same cases. On Kept after exchange within that group: ${s.ex_usual}% vs ${s.ex_model}%. First choice scores 0% on exchange cases by definition.</p></div>
+<div class="card"><h2>Returns impact (kurtas, estimate)</h2><p>${im.srn.toLocaleString()} size-related returns on ${im.lines.toLocaleString()} kurta lines in the sample; ×25 ≈ ${(im.srn*25).toLocaleString()} company-wide. Wrong-size rate falls by ${Math.round(im.rel*100)}% for shoppers who follow the recommendation (usual-size error 24.5% → model 14.0%).</p>
+<div class="wrap"><table><tr><th>Shoppers following advice</th><th>Returns avoided</th><th>Saving at ₹117</th></tr>${im.sc.map(x=>`<tr><td>${x.adopt*100}%</td><td>${x.avoided.toLocaleString()}</td><td>₹${x.inr_cr} crore</td></tr>`).join('')}</table></div>
+<p class="mu">Assumptions: test-set error rates carry over to live traffic; the 25% target is only reached if ~60% of kurta buyers follow the advice. Saving counts reverse logistics only, not lost margin.</p></div>
+<div class="card"><h2>A/B test plan</h2><p>Randomise by customer. Primary: PDP conversion (3.9% baseline, +10% relative, 80% power, 5% significance) needs about ${ab.n.toLocaleString()} sessions per arm. Guardrail: 30-day size-return rate. Run whole weeks and report weeks 2–4 separately (novelty). Analyse everyone assigned (intention-to-treat).</p>
+<p class="mu">Duration: kurtas alone have only ${ab.sessions.toLocaleString()} bot-cleaned sessions a month, so the test would take about 68 weeks; running across all categories (about 24,000 sessions a month) takes about 15 weeks.</p></div>
+<div class="card warn"><h2>Not done in this build</h2><p class="mu">The 120-case try-on grid is not scored: it needs real renders from consented team photos and a GPU model. Brand chart flags use consented-measurement customers only (about 2,650 lines).</p></div>`;
+</script></body></html>

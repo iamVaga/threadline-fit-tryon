@@ -1,0 +1,9 @@
+fastapi==0.162.2
+uvicorn==0.54.0
+python-multipart==0.0.33
+pillow==13.0.0
+numpy==2.5.4
+gradio_client==2.7.2
+httpx==0.28.1
+mediapipe==1.2.2
+openpyxl==3.1.5
