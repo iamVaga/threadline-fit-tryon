@@ -1,8 +1,9 @@
-"""Threadline Fit & Try-On API."""
+"""FitCheck Fit & Try-On API."""
 import base64
 import csv
 import hmac
 import io
+import json
 import os
 import shutil
 import tempfile
@@ -19,10 +20,12 @@ from PIL import Image, ImageDraw, ImageFont
 
 from tryon_model import ROOT, check_photo, read_image, remote_backend, run_model
 
-TMP = Path(os.getenv("TMP_DIR", str(Path(tempfile.gettempdir()) / "threadline-sessions")))
+TMP = Path(os.getenv("TMP_DIR", str(Path(tempfile.gettempdir()) / "fitcheck-sessions")))
 LOG = Path(os.getenv("LOG_FILE", "render_log.csv"))
 GARMENTS = ROOT / "static" / "garments"
 GARMENTS.mkdir(exist_ok=True)
+PRODUCTS = ROOT / "static" / "products"
+PRODUCTS.mkdir(exist_ok=True)
 LABEL = "Simulated preview — fit, colour and drape may differ from the actual product."
 MAX_RENDERS = 3
 PURGE_S = min(24, max(0.001, float(os.getenv("PURGE_HOURS", "24")))) * 3600
@@ -88,13 +91,23 @@ async def lifespan(_app):
         thread.join()
 
 
-app = FastAPI(title="Threadline Fit & Try-On", lifespan=lifespan)
+app = FastAPI(title="FitCheck Fit & Try-On", lifespan=lifespan)
+
+
+def label_font(size):
+    for name in ("segoeui.ttf", "DejaVuSans.ttf", "/System/Library/Fonts/Helvetica.ttc",
+                 "/System/Library/Fonts/Supplemental/Arial.ttf", "Arial.ttf"):
+        try:
+            return ImageFont.truetype(name, size=size)
+        except OSError:
+            continue
+    return ImageFont.load_default(size=size)
 
 
 def stamp(image, placeholder):
-    image.thumbnail((900, 1300))
+    image.thumbnail((1600, 2300))
     font_size = max(17, round(image.width / 28))
-    font = ImageFont.truetype("segoeui.ttf" if os.name == "nt" else "DejaVuSans.ttf", size=font_size)
+    font = label_font(font_size)
     line_height = font_size + 6
     lines = ["PLACEHOLDER — original photo"] if placeholder else []
     line = ""
@@ -136,6 +149,29 @@ def garments():
         path.name for path in GARMENTS.iterdir()
         if path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES
     )
+
+
+@app.get("/api/catalog")
+def catalog():
+    """Real SKUs from static/products/products.json. Variants without an image file are skipped."""
+    manifest = PRODUCTS / "products.json"
+    if not manifest.is_file():
+        return JSONResponse([], headers=NO_STORE)
+    try:
+        items = json.loads(manifest.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return JSONResponse([], headers=NO_STORE)
+    out = []
+    for item in items:
+        variants = [
+            {**v, "image": "/products/" + v["image"]}
+            for v in item.get("variants", [])
+            if v.get("image") and (PRODUCTS / v["image"]).resolve().parent == PRODUCTS.resolve()
+            and (PRODUCTS / v["image"]).is_file()
+        ]
+        if variants:
+            out.append({**item, "variants": variants})
+    return JSONResponse(out, headers=NO_STORE)
 
 
 @app.get("/api/tryon-config")
@@ -230,6 +266,7 @@ def delete(session: str = Form(...)):
     return JSONResponse({"deleted": True}, headers=NO_STORE)
 
 
+app.mount("/products", StaticFiles(directory=PRODUCTS), name="products")
 app.mount("/garments", StaticFiles(directory=GARMENTS), name="garments")
 
 

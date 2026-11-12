@@ -1,31 +1,20 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Threadline Fit & Try-On</title>
+<title>FitCheck Fit & Try-On</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;650;700&amp;family=Inter:wght@400;500;600;650;700;750&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Inter:wght@400;500;600;650;700;750&amp;display=swap" rel="stylesheet">
 <style>
 :root {
-  color-scheme: light;
-  --ivory:#fbf6ee; --surface:#fffdf9; --sand:#f2e7d9; --line:#e3d4c6;
-  --ink:#2c1b26; --muted:#65535b; --plum:#661d42; --on-plum:#fff9fc;
-  --hero:#ead3dc; --marigold:#e3a73d; --ochre:#79500a; --focus:#8e2760;
-  --green:#285a48; --green-bg:#e4efe6; --rose:#86294b; --rose-bg:#fae7ed;
-  --amber-bg:#f8edcf; --control:#9b7b8a; --tile-ink:#291720; --tile-paper:#fff8ee;
-  --shadow:0 2px 5px #4d222009, 0 14px 35px #4d222011;
-  --display:"Fraunces",Georgia,serif; --ui:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+  --ivory:#000; --surface:#0a0a0a; --sand:#151515; --line:#262b26;
+  --ink:#f2fff2; --muted:#9fab9f; --plum:#39ff14; --on-plum:#000;
+  --hero:#0c2308; --marigold:#ffd000; --ochre:#39ff14; --focus:#39ff14;
+  --green:#39ff14; --green-bg:#0f2a0b; --rose:#ff8aa0; --rose-bg:#2b1017;
+  --amber-bg:#10250b; --control:#5f705f; --tile-ink:#000; --tile-paper:#fff;
+  --shadow:0 0 0 1px #39ff1418, 0 12px 40px #39ff1410;
+  --display:"Space Grotesk",system-ui,sans-serif; --ui:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
   --radius:20px; --ease:180ms ease; --compare:50%;
-}
-@media(prefers-color-scheme:dark) {
-  :root {
-    color-scheme:dark;
-    --ivory:#1b141a; --surface:#261c25; --sand:#362732; --line:#533f4e;
-    --ink:#fbecf2; --muted:#d1bac6; --plum:#f1accb; --on-plum:#38152b;
-    --hero:#4b283e; --marigold:#edb950; --ochre:#f6c66e; --focus:#ffc768;
-    --green:#a5dec1; --green-bg:#263f36; --rose:#ffc1d3; --rose-bg:#4a2738;
-    --amber-bg:#45351e; --control:#b594a5;
-    --shadow:0 2px 6px #0004,0 14px 35px #0003;
-  }
 }
 *,*::before,*::after { box-sizing:border-box; }
 html { scroll-padding-block:16px 112px; }
@@ -44,7 +33,7 @@ button:disabled { cursor:default; }
 .eyebrow { display:block; color:var(--ochre); font-size:13px; font-weight:750; letter-spacing:.1em; text-transform:uppercase; }
 .hero { position:relative; display:grid; gap:10px; padding:25px 22px; border:1px solid var(--line); border-radius:var(--radius); background:linear-gradient(124deg,var(--surface),var(--hero)); box-shadow:var(--shadow); }
 .hero-mark { display:none; }
-.hero h1 { font-size:clamp(32px,7vw,64px); letter-spacing:-.055em; }
+.hero h1 { font-size:clamp(36px,8vw,72px); letter-spacing:-.04em; color:var(--plum); text-shadow:0 0 28px #39ff1466; }
 .hero .subtitle { font:600 clamp(22px,3.7vw,32px)/1.2 var(--display); }
 .hero .trust { display:flex; flex-wrap:wrap; gap:4px 8px; align-items:center; color:var(--ink); font-size:13px; font-weight:650; }
 .trust span[aria-hidden] { color:var(--ochre); }
@@ -62,15 +51,36 @@ nav button:not(.on):hover,.stepper button:hover { background:var(--surface); col
 .card-head { display:flex; gap:10px; align-items:center; margin-bottom:12px; }
 .card>p { margin-top:10px; }
 .product { display:grid; gap:15px; }
-.sw { position:relative; min-height:240px; display:grid; place-items:center; overflow:hidden; border-radius:16px; padding:14px; color:var(--tile-ink); }
-.sw::before,.sw::after { content:""; position:absolute; inset:9% 22%; border:1px solid currentColor; border-radius:52% 52% 5% 5%; opacity:.32; pointer-events:none; }
-.sw::after { inset:13% 26%; }
-.sw svg { width:44%; max-height:185px; fill:none; stroke:var(--tile-paper); stroke-width:1.5; }
-#swName { position:absolute; bottom:12px; padding:4px 11px; border-radius:999px; background:var(--tile-paper); font-size:13px; font-weight:750; }
+.sw { position:relative; min-height:240px; display:grid; place-items:center; overflow:hidden; border-radius:16px; padding:14px 14px 44px; background:#101010; border:1px solid var(--line); }
+.sw #swSvg { display:grid; place-items:center; width:100%; }
+.sw svg { width:46%; max-height:185px; }
+#swName { position:absolute; bottom:12px; padding:4px 11px; border-radius:999px; background:var(--plum); color:#000; font-size:13px; font-weight:750; }
+.catbar { display:grid; gap:8px; margin-bottom:12px; }
+.catalog { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; max-height:430px; overflow:auto; padding:3px; margin-bottom:14px; }
+.cat-card { display:grid; align-content:start; gap:3px; text-align:left; padding:8px; border:1px solid var(--line); border-radius:14px; background:var(--ivory); color:var(--ink); transition:border-color var(--ease),box-shadow var(--ease); }
+.cat-card:hover { border-color:var(--plum); box-shadow:0 0 18px #39ff1426; }
+.cat-card[aria-pressed=true] { border:2px solid var(--plum); padding:7px; box-shadow:0 0 22px #39ff1440; }
+.cat-card b { font-size:13px; line-height:1.3; }
+.cat-card .mu { font-size:12px; line-height:1.35; }
+.ct { aspect-ratio:3/4; display:grid; place-items:center; border-radius:10px; background:#101010; margin-bottom:4px; }
+.ct svg { width:60%; }
+.ct img { width:100%; height:100%; object-fit:cover; border-radius:10px; }
+.sw img { max-width:100%; max-height:240px; object-fit:contain; border-radius:8px; }
+.precise { margin-top:14px; padding:2px 14px 14px; border:1px solid var(--line); border-radius:14px; background:var(--ivory); }
+.precise>summary { margin:0 -14px; padding:0 14px; }
+.precise h3 { margin-top:16px; font-size:15px; }
+.why { list-style:none; padding:0; margin:12px 0 0; display:grid; gap:6px; }
+.why li { display:flex; justify-content:space-between; gap:10px; padding:7px 11px; border-radius:10px; background:var(--ivory); border:1px solid var(--line); font-size:13px; }
+.why b { color:var(--plum); }
+#prec { margin-top:8px; }
+#notes p { margin-top:8px; }
+#phThumb { width:90px; aspect-ratio:3/4; object-fit:cover; border-radius:10px; border:1px solid var(--plum); }
+#tryNeeds:empty { display:none; }
+#tryNeeds { margin-top:12px; }
 .product-meta { display:grid; gap:4px; }
 .fields { display:grid; gap:0 12px; }
 label,.field-label { display:block; color:var(--muted); font-size:13px; font-weight:650; margin:10px 0 4px; }
-select,input[type=number],input[type=password] { width:100%; min-height:44px; border:1px solid var(--control); border-radius:12px; padding:0 11px; background:var(--ivory); color:var(--ink); }
+select,input[type=number],input[type=password],input[type=search] { width:100%; min-height:44px; border:1px solid var(--control); border-radius:12px; padding:0 11px; background:var(--ivory); color:var(--ink); }
 input:disabled { opacity:.65; }
 .sr-only { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
 .chips,.thumbs { display:flex; flex-wrap:wrap; gap:5px; }
@@ -152,6 +162,8 @@ th button { min-height:44px; border:0; padding:0; background:none; color:var(--i
 .target { padding:10px; border-radius:12px; background:var(--rose-bg); color:var(--rose); font-size:13px; font-weight:650; }
 .target progress { width:100%; height:10px; accent-color:var(--rose); }
 @media(min-width:600px) {
+  .catbar { grid-template-columns:1.5fr 1fr 1fr; }
+  .catalog { grid-template-columns:repeat(3,minmax(0,1fr)); }
   main { padding:24px 24px 105px; }
   .hero { padding:34px; }
   .card { padding:22px; }
@@ -177,10 +189,10 @@ th button { min-height:44px; border:0; padding:0; background:none; color:var(--i
 </style></head><body><main>
 <header class="hero">
   <span class="eyebrow">The kurta edit</span>
-  <h1>Threadline</h1>
+  <h1>FitCheck</h1>
   <p class="subtitle">Find your size. See it on you.</p>
-  <div class="trust" title="Deletion applies to Threadline copies. See photo consent for model host retention.">
-    <span>Private by design</span><span aria-hidden="true">·</span><span>18+</span><span aria-hidden="true">·</span><span>Threadline copies deleted within 24h</span>
+  <div class="trust" title="Deletion applies to FitCheck copies. See photo consent for model host retention.">
+    <span>Private by design</span><span aria-hidden="true">·</span><span>18+</span><span aria-hidden="true">·</span><span>FitCheck copies deleted within 24h</span>
   </div>
   <div class="mu">Women’s kurtas · prototype built on the PS-13 synthetic data</div>
   <svg class="hero-mark" viewBox="0 0 180 180" fill="none" stroke="currentColor" aria-hidden="true">
@@ -192,7 +204,7 @@ th button { min-height:44px; border:0; padding:0; background:none; color:var(--i
     <circle cx="90" cy="90" r="7"/>
   </svg>
 </header>
-<nav aria-label="Threadline views">
+<nav aria-label="FitCheck views">
   <button class="on" data-t="shop" aria-controls="shop" aria-pressed="true">Shop</button>
   <button data-t="fit" aria-controls="fit" aria-pressed="false">Fit &amp; Returns</button>
   <button data-t="res" aria-controls="res" aria-pressed="false">Results</button>
@@ -207,20 +219,44 @@ th button { min-height:44px; border:0; padding:0; background:none; color:var(--i
  <div class="shop-grid">
  <article class="card" id="pickStep" tabindex="-1">
  <div class="card-head"><span class="step-index" aria-hidden="true">1</span><h2>Pick a kurta</h2></div>
- <div class="product"><div class="sw" id="sw">
-   <svg aria-hidden="true" viewBox="0 0 100 145"><path d="M37 13 22 18 6 54l16 8 8-16-3 84h46l-3-84 8 16 16-8-16-36-15-5c-3 8-8 12-13 12s-10-4-13-12Z"/><path d="M47 25v37h6V25M32 111v19m36-19v19M11 48l16 8m46 0 16-8m-61 68h44"/><path d="M43 78h14m-11 6h8"/></svg>
-   <span id="swName">Kurta</span>
- </div><div class="product-meta"><h3 id="pn">Mustard straight kurta</h3>
- <label for="tb">Brand</label><select id="tb"></select>
- <label for="ft">Garment fit label</label><select id="ft"><option>Regular</option><option>Slim</option><option>Relaxed</option></select>
- <label for="co" id="colourLabel">Colour</label><div id="colourChips" class="chips" role="group" aria-labelledby="colourLabel"></div><select id="co" hidden><option value="#c58a12">Mustard</option><option value="#2f6f9f">Sky blue</option><option value="#6d4aa0">Lavender</option><option value="#9c2f3e">Maroon</option></select></div></div></article>
+ <div class="catbar">
+   <div><label class="sr-only" for="cs">Search kurtas</label><input id="cs" type="search" placeholder="Search kurtas, brands, colours"></div>
+   <div><label class="sr-only" for="cbrand">Brand</label><select id="cbrand"></select></div>
+   <div><label class="sr-only" for="csort">Sort</label><select id="csort"><option value="">Featured</option><option value="lo">Price: low to high</option><option value="hi">Price: high to low</option></select></div>
+ </div>
+ <div id="catalog" class="catalog" role="group" aria-label="Kurta catalogue"></div>
+ <p id="catNote" class="mu"></p>
+ <p id="catEmpty" class="mu hid">No kurtas match. Try another search or brand.</p>
+ <div class="product picked"><div class="sw" id="sw"><div id="swSvg"></div><span id="swName">Kurta</span></div>
+ <div class="product-meta"><span class="eyebrow">Selected</span><h3 id="pn"></h3><p class="mu" id="pmeta"></p>
+ <span class="field-label" id="colourLabel">Colour</span><div id="colourChips" class="chips" role="group" aria-labelledby="colourLabel"></div>
+ <select id="tb" hidden></select><select id="ft" hidden><option>Regular</option><option>Slim</option><option>Relaxed</option></select></div></div></article>
 
  <article class="card" id="sizeStep" tabindex="-1">
- <div class="card-head"><span class="step-index" aria-hidden="true">2</span><div><h2>Find my size</h2><span class="mu">(2 quick questions)</span></div></div>
+ <div class="card-head"><span class="step-index" aria-hidden="true">2</span><div><h2>Find my size</h2><span class="mu">(2 quick questions, or add more for higher precision)</span></div></div>
  <div class="fields"><div><label for="us">1. Your usual top size</label><select id="us"><option value="">Not sure</option><option>XS</option><option>S</option><option selected>M</option><option>L</option><option>XL</option><option>XXL</option><option>3XL</option></select>
  </div><div><label for="ub">…in which brand? (helps a lot)</label><select id="ub"></select>
  </div><div><label for="fp">2. How do you like kurtas to fit?</label><select id="fp"><option value="-0.3">Snug</option><option value="0" selected>Regular</option><option value="0.3">Roomy</option></select>
- </div><details><summary class="mu">Optional: add my bust (cm)</summary><label for="bu">Bust, cm — used only with the separate consent below</label><input id="bu" type="number" inputmode="decimal" min="60" max="140" placeholder="e.g. 92"></details></div>
+ </div></div>
+ <details class="precise" id="precise"><summary>Get a more precise fit <span class="tag t3">optional</span></summary>
+   <p class="mu">Each detail sharpens the recommendation. Sizing runs in your browser; these numbers are never uploaded.</p>
+   <h3>A kurta you already own</h3>
+   <div class="fields"><div><label for="ub2">Brand</label><select id="ub2"></select></div>
+   <div><label for="us2">Size you bought</label><select id="us2"><option value="">—</option><option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option><option>XXL</option><option>3XL</option></select></div>
+   <div><label for="fb2">How did it fit?</label><select id="fb2"><option value="perfect">Fits well</option><option value="tight">A bit tight</option><option value="loose">A bit loose</option></select></div></div>
+   <h3>Your measurements</h3>
+   <div class="tog"><input type="checkbox" role="switch" id="c2"><label for="c2">I agree to use my body measurements for size advice in this tab.</label></div>
+   <div class="fields">
+     <div><label for="bu">Bust, cm</label><input id="bu" type="number" inputmode="decimal" min="60" max="140" placeholder="e.g. 92"></div>
+     <div><label for="wa">Waist, cm</label><input id="wa" type="number" inputmode="decimal" min="50" max="140" placeholder="e.g. 76"></div>
+     <div><label for="hi">Hip, cm</label><input id="hi" type="number" inputmode="decimal" min="60" max="160" placeholder="e.g. 98"></div>
+     <div><label for="he">Height, cm</label><input id="he" type="number" inputmode="decimal" min="130" max="210" placeholder="e.g. 162"></div>
+     <div><label for="we">Weight, kg</label><input id="we" type="number" inputmode="decimal" min="30" max="200" placeholder="e.g. 60"></div>
+   </div>
+   <details><summary class="mu">How to measure</summary>
+     <p class="mu"><b>Bust:</b> around the fullest part of your chest, tape level across your back. <b>Waist:</b> around the narrowest part of your torso. <b>Hip:</b> around the fullest part of your hips. Keep the tape snug but not tight, and measure over thin clothing. Kurtas are sized to clear your fullest measurement, so hip and bust matter most.</p>
+   </details>
+ </details>
  <button class="btn" id="go">Recommend my size</button>
  <div id="out" class="result-size hid" aria-live="polite">
    <div class="size">
@@ -231,23 +267,24 @@ th button { min-height:44px; border:0; padding:0; background:none; color:var(--i
      </div>
    </div>
    <div class="mu" id="rs"></div><div class="tag t2 hid" id="sizeHint"></div>
+   <div class="mu" id="prec"></div>
+   <ul class="why" id="why" aria-label="What each input suggests"></ul>
+   <div id="notes"></div>
    <div class="mu" id="cmp"></div>
  </div></article>
 
  <article class="card" id="tryStep" tabindex="-1">
  <div class="card-head"><span class="step-index" aria-hidden="true">3</span><div><h2>See it on me</h2><span class="tag t2">Simulated preview</span></div></div>
- <p class="mu">Photo and measurements are optional and never needed to shop. Each is a separate choice.</p>
- <div class="tog"><input type="checkbox" role="switch" id="c1" disabled><label for="c1">I agree to send my photo for this preview. <span class="mu" id="photoPrivacy">Threadline checks the photo and clears its copies when I delete them or within 24 hours.</span></label></div>
+ <p class="mu">Photo is optional and never needed to shop. Each consent is a separate choice.</p>
+ <p id="tryOn" class="lab"></p>
+ <div class="tog"><input type="checkbox" role="switch" id="c1"><label for="c1">I agree to send my photo for this preview. <span class="mu" id="photoPrivacy">FitCheck checks the photo and clears its copies when I delete them or within 24 hours.</span></label></div>
  <div id="teamAccess" class="hid"><label for="teamCode">Team access code</label><input id="teamCode" type="password" autocomplete="off" maxlength="256"></div>
- <div class="tog"><input type="checkbox" role="switch" id="c2"><label for="c2">I agree to use my bust measurement for size advice in this tab.</label></div>
  <label for="ag">Age (photo try-on is for 18+)</label><input id="ag" type="number" inputmode="numeric" min="5" max="99" placeholder="e.g. 27">
  <div class="drop" id="photoDrop">
  <svg viewBox="0 0 58 70" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 14V4h10m32 0h10v10M3 56v10h10m32 0h10V56"/><circle cx="29" cy="14" r="6"/><path d="M24 24h10l8 18-5 2-4-9 2 24h-5l-1-14-1 14h-5l2-24-4 9-5-2Z"/></svg>
- <label for="ph">Full-body photo, head to feet, one person, good light</label><input id="ph" type="file" accept="image/jpeg,image/png,image/webp" capture="user" disabled><span class="mu">Drop a photo here or choose a file.</span></div>
- <label for="gf">Kurta image (upload, or pick one below)</label><input id="gf" type="file" accept="image/jpeg,image/png,image/webp">
- <div id="garmentSelect"><label for="gs">Sample kurta</label><select id="gs"><option value="">— or choose a sample kurta —</option></select></div>
- <div id="garmentThumbs" class="thumbs" role="group" aria-label="Sample kurta thumbnails"></div>
- <p id="garmentStatus" class="mu" role="status">Loading sample kurtas…</p>
+ <label for="ph">Full-body photo, head to feet, one person, good light</label><input id="ph" type="file" accept="image/jpeg,image/png,image/webp"><img id="phThumb" class="hid" alt="Your chosen photo"><span class="mu">Drop a photo here or choose a file.</span></div>
+ <details><summary>Use my own kurta image instead</summary><label for="gf">Kurta image (JPG, PNG or WebP)</label><input id="gf" type="file" accept="image/jpeg,image/png,image/webp"></details>
+ <p id="tryNeeds" class="mu" role="status"></p>
  <div id="msg" class="mu" role="status"></div>
  <button class="btn" id="rn" disabled>See it on me</button>
  <div id="renderProgress" class="hid"><div class="skeleton" aria-hidden="true"></div><p id="renderStage" class="mu" aria-hidden="true"></p></div>
@@ -331,57 +368,215 @@ document.querySelectorAll('nav button').forEach(button => {
     updateDock();
   };
 });
-function sw() {
-  const selected = $('co').selectedOptions[0];
-  $('sw').style.background = selected.value;
-  $('swName').textContent = selected.text + ' kurta';
-  $('pn').textContent = selected.text + ' straight kurta';
-  for (const chip of $('colourChips').children) {
-    chip.setAttribute('aria-pressed', String(chip.dataset.colour === selected.value));
+// ---------- catalog ----------
+let CAT = [
+  ['Vastrika', 'Everyday Straight Kurta', 1299, 'Regular', 'straight', [['Mustard', '#c58a12'], ['Sky blue', '#2f6f9f'], ['Maroon', '#9c2f3e']]],
+  ['Aarvi', 'Cotton A-line Kurta', 1499, 'Regular', 'aline', [['Lavender', '#8a6cc0'], ['Teal', '#1f8a82'], ['Blush', '#d98aa0']]],
+  ['Kesar Lane', 'Block-Print Straight Kurta', 1199, 'Slim', 'straight', [['Saffron', '#e0861a'], ['Ivory', '#e8e0cf'], ['Olive', '#6b7a3a']]],
+  ['Mitti & Mor', 'Clay Cotton Kurta', 1099, 'Regular', 'straight', [['Terracotta', '#b5573a'], ['Sage', '#8da58a'], ['Navy', '#223a6b']]],
+  ['Sutra Nine', 'Indigo A-line Kurta', 1349, 'Slim', 'aline', [['Indigo', '#2c3f87'], ['Wine', '#6d1f3c'], ['Charcoal', '#3b3b40']]],
+  ['Chandni Lane', 'Chikankari Straight Kurta', 1899, 'Regular', 'straight', [['White', '#f1efe8'], ['Powder blue', '#9bbbd8'], ['Peach', '#f0b79a']]],
+  ['Jharokha', 'Festive A-line Kurta', 2199, 'Relaxed', 'aline', [['Emerald', '#0f7a55'], ['Magenta', '#b02a78'], ['Gold', '#c9a227']]],
+  ['Ilaayi', 'Linen Straight Kurta', 1599, 'Relaxed', 'straight', [['Sand', '#c9b48f'], ['Rust', '#a4472a'], ['Slate', '#5a6b78']]],
+  ['Saanjh', 'Evening A-line Kurta', 1749, 'Regular', 'aline', [['Plum', '#5e2a6b'], ['Coral', '#e5604d'], ['Forest', '#24533a']]],
+  ['Phulkari House', 'Phulkari Straight Kurta', 2399, 'Regular', 'straight', [['Red', '#c0212f'], ['Yellow', '#e8b81c'], ['Green', '#3a8a3f']]],
+  ['Neelkanth', 'Daily Wear Straight Kurta', 899, 'Regular', 'straight', [['Cobalt', '#2250b8'], ['Grey', '#7b7f86'], ['Pink', '#e07aa6']]],
+  ['Kaashi Weave', 'Banarasi Weave Kurta', 2799, 'Regular', 'aline', [['Royal blue', '#243c9c'], ['Maroon', '#80182f'], ['Bottle green', '#134d36']]],
+  ['Rangrez Studio', 'Hand-dyed Straight Kurta', 1449, 'Relaxed', 'straight', [['Madder', '#a53845'], ['Turmeric', '#d8a015'], ['Indigo', '#32487e']]],
+  ['Noor & Neel', 'Pastel A-line Kurta', 1299, 'Regular', 'aline', [['Mint', '#9ad1b6'], ['Lilac', '#b9a4dc'], ['Butter', '#efdc8c']]],
+  ['Ambar', 'Mul Cotton Straight Kurta', 999, 'Slim', 'straight', [['Orange', '#e4691f'], ['Black', '#16161a'], ['Aqua', '#3bb3b8']]],
+  ['Dhaaga', 'Embroidered Kurta', 1999, 'Regular', 'aline', [['Dusty rose', '#c98a96'], ['Moss', '#5d6d3a'], ['Ink', '#1c2540']]],
+].map(([brand, name, price, fit, shape, cols], id) => ({id, brand, name, price, fit, shape,
+  cols: cols.map(([name, hex]) => ({name, hex, image: null, sku: null}))}));
+let demoCatalog = true;
+const KP = {
+  straight: ['M37 13 22 18 6 54l16 8 8-16-3 84h46l-3-84 8 16 16-8-16-36-15-5c-3 8-8 12-13 12s-10-4-13-12Z', 'M29 123h42'],
+  aline: ['M37 13 22 18 6 54l16 8 8-16-10 84h60l-10-84 8 16 16-8-16-36-15-5c-3 8-8 12-13 12s-10-4-13-12Z', 'M23 123h54']
+};
+function kurtaSvg(hex, shape, flat) {
+  const [outline, hem] = KP[shape];
+  const edge = flat ? 'rgba(0,0,0,.4)' : 'rgba(255,255,255,.45)';
+  const head = flat ? ' xmlns="http://www.w3.org/2000/svg" width="500" height="725"' : ' aria-hidden="true"';
+  return `<svg${head} viewBox="0 0 100 145">${flat ? '<rect width="100" height="145" fill="#f2f2f2"/>' : ''}` +
+    `<path d="${outline}" fill="${hex}" stroke="${edge}" stroke-width="1.1" stroke-linejoin="round"/>` +
+    `<path d="M50 25v38M44 80h12${hem}" fill="none" stroke="${edge}" stroke-width="1" stroke-linecap="round"/></svg>`;
+}
+async function catalogGarment() {
+  const variant = cur.p.cols[cur.c];
+  if (variant.image) {
+    const res = await fetch(variant.image);
+    if (!res.ok) throw new Error('image');
+    const blob = await res.blob();
+    return new File([blob], 'garment.' + (blob.type.split('/')[1] || 'jpg'), {type: blob.type});
+  }
+  const hex = variant.hex;
+  const image = new Image();
+  image.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(kurtaSvg(hex, cur.p.shape, true));
+  await image.decode();
+  const canvas = document.createElement('canvas');
+  canvas.width = 768; canvas.height = 1024;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#f2f2f2'; ctx.fillRect(0, 0, 768, 1024);
+  const h = 1024, w = h * 100 / 145;
+  ctx.drawImage(image, (768 - w) / 2, 0, w, h);
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+  return new File([blob], 'garment.png', {type: 'image/png'});
+}
+const money = n => '₹' + n.toLocaleString('en-IN');
+const cur = {p: CAT[0], c: 0};
+$('ub2').innerHTML = '<option value="">Not sure / other brand</option>' + D.brands.map(b => `<option>${b.brand}</option>`).join('');
+$('cbrand').innerHTML = '<option value="">All brands</option>' + D.brands.map(b => `<option>${b.brand}</option>`).join('');
+function renderCatalog() {
+  const q = $('cs').value.trim().toLowerCase(), br = $('cbrand').value, so = $('csort').value;
+  const list = CAT.filter(p => (!br || p.brand === br) &&
+    (!q || (p.brand + ' ' + p.name + ' ' + p.cols.map(c => c.name).join(' ')).toLowerCase().includes(q)));
+  if (so === 'lo') list.sort((a, b) => a.price - b.price);
+  if (so === 'hi') list.sort((a, b) => b.price - a.price);
+  $('catalog').replaceChildren(...list.map(p => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'cat-card';
+    card.setAttribute('aria-pressed', String(p.id === cur.p.id));
+    const tile = document.createElement('div');
+    tile.className = 'ct';
+    if (p.cols[0].image) {
+      const img = document.createElement('img');
+      img.src = p.cols[0].image; img.alt = ''; img.loading = 'lazy';
+      tile.append(img);
+    } else tile.innerHTML = kurtaSvg(p.cols[0].hex, p.shape);
+    const name = document.createElement('b'), brand = document.createElement('span'), price = document.createElement('span');
+    name.textContent = p.name;
+    brand.className = price.className = 'mu';
+    brand.textContent = p.brand;
+    price.textContent = `${money(p.price)} · ${p.cols.length} colours`;
+    card.append(tile, name, brand, price);
+    card.dataset.id = p.id;
+    card.onclick = () => selectProduct(p);
+    return card;
+  }));
+  $('catEmpty').classList.toggle('hid', list.length > 0);
+}
+function renderPicked() {
+  const {p, c} = cur, v = p.cols[c], cn = v.name, hex = v.hex;
+  if (v.image) {
+    const img = document.createElement('img');
+    img.src = v.image; img.alt = `${p.brand} ${p.name} in ${cn}`;
+    $('swSvg').replaceChildren(img);
+  } else $('swSvg').innerHTML = kurtaSvg(hex, p.shape);
+  $('swName').textContent = cn;
+  $('pn').textContent = p.name;
+  $('pmeta').textContent = `${p.brand} · ${money(p.price)} · ${p.fit} fit` + (v.sku ? ` · SKU ${v.sku}` : '');
+  $('tryOn').textContent = `Trying on: ${cn} ${p.name} · ${p.brand}`;
+  $('colourChips').replaceChildren(...p.cols.map(({name, hex: value}, i) => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.style.setProperty('--chip', value);
+    chip.setAttribute('aria-label', name);
+    chip.setAttribute('aria-pressed', String(i === c));
+    chip.title = name;
+    chip.onclick = () => { cur.c = i; renderPicked(); clearPreview(); sync(); };
+    return chip;
+  }));
+}
+function selectProduct(p, initial) {
+  cur.p = p; cur.c = 0;
+  $('tb').value = p.brand;
+  $('ft').value = p.fit;
+  $('gf').value = '';
+  renderPicked();
+  document.querySelectorAll('.cat-card').forEach(card => {
+    card.setAttribute('aria-pressed', String(Number(card.dataset.id) === p.id));
+  });
+  if (initial) return; // later `let` state is not initialised yet
+  clearPreview();
+  if (!$('out').classList.contains('hid')) rec();
+  sync();
+}
+['cs', 'cbrand', 'csort'].forEach(id => { $(id).oninput = renderCatalog; });
+renderCatalog();
+selectProduct(CAT[0], true);
+$('catNote').textContent = 'Demo illustrations. Add real product photos in static/products to show real SKUs.';
+fetch('/api/catalog').then(r => r.ok ? r.json() : []).then(items => {
+  if (!items.length) return;
+  demoCatalog = false;
+  CAT = items.map((item, id) => ({id, brand: item.brand, name: item.name, price: item.price, fit: item.fit || 'Regular',
+    shape: 'straight', cols: item.variants.map(v => ({name: v.colour, hex: v.hex || '#444', image: v.image, sku: v.sku}))}));
+  $('catNote').textContent = '';
+  cur.p = CAT[0]; cur.c = 0;
+  renderCatalog();
+  selectProduct(CAT[0]);
+}).catch(() => {});
+const clampI = v => Math.max(0, Math.min(6, Math.round(v)));
+const FIELD = {bu: [60, 140, 'bust'], wa: [50, 140, 'waist'], hi: [60, 160, 'hip'], he: [130, 210, 'height'], we: [30, 200, 'weight']};
+function rec() {
+  const tb = $('tb').value, bT = B[tb].b, ft = $('ft').value, g = D.gam, fp = +$('fp').value;
+  const fitAdj = ft === 'Slim' ? g[0] : ft === 'Relaxed' ? g[1] : 0;
+  const toSize = idx => L[clampI(idx + bT + fp + fitAdj)];
+  const body = $('c2').checked, notes = [], val = {}, sig = [];
+  if (body) for (const [id, [lo, hi, name]] of Object.entries(FIELD)) {
+    if ($(id).value === '') continue;
+    const v = parseFloat($(id).value);
+    if (v >= lo && v <= hi) val[id] = v; else notes.push(`Ignored ${name}: please enter a value between ${lo} and ${hi}.`);
+  }
+  const us = $('us').value, ub = $('ub').value, us2 = $('us2').value, ub2 = $('ub2').value;
+  if (us) {
+    const i = L.indexOf(us);
+    if (ub) sig.push({label: `Usual ${us} in ${ub}`, idx: i - B[ub].b, w: 1.2});
+    else sig.push({label: `Usual size ${us}`, idx: .874 * i + .176, w: 1});
+  }
+  if (us2 && ub2) {
+    const fb = $('fb2').value, adj = {tight: .4, loose: -.4, perfect: 0}[fb];
+    sig.push({label: `${us2} in ${ub2} (${{tight: 'a bit tight', loose: 'a bit loose', perfect: 'fits well'}[fb]})`, idx: L.indexOf(us2) - B[ub2].b + adj, w: 1.2});
+  }
+  if (val.bu) sig.push({label: `Bust ${val.bu} cm`, idx: D.bust[0] * val.bu + D.bust[1], w: 2, body: 1});
+  if (val.hi) sig.push({label: `Hip ${val.hi} cm`, idx: (val.hi - 87) / 6, w: 1.5, body: 1});
+  if (val.wa) sig.push({label: `Waist ${val.wa} cm`, idx: (val.wa - 64) / 6, w: .8, body: 1});
+  if (val.we) sig.push({label: `Weight ${val.we} kg`, idx: (val.we - 55) / 6.5, w: .5});
+  const real = sig.length;
+  if (!real) sig.push({label: 'No size info yet, so this is a starting point (M)', idx: 2, w: 1, start: 1});
+  let u = sig.reduce((a, s) => a + s.idx * s.w, 0) / sig.reduce((a, s) => a + s.w, 0);
+  const bodyIdx = sig.filter(s => s.body).map(s => s.idx);
+  // Kurtas must clear the fullest of bust / hip / waist, so lean toward the largest measurement.
+  if (bodyIdx.length > 1) u += .5 * Math.max(0, Math.max(...bodyIdx) - u - .5);
+  const y = u + bT + fp + fitAdj;
+  const k = clampI(y), d = Math.abs(y - Math.round(y));
+  const idxs = sig.map(s => s.idx), spread = Math.max(...idxs) - Math.min(...idxs);
+  const info = real > 1 ? .05 * (real - 1) : 0;
+  const conf = Math.max(.4, Math.min(.85, .5 + .25 * (1 - 2 * d) + info + (ub && us ? .04 : 0) - (spread > 1 ? .05 * (spread - 1) : 0)));
+  $('sz').textContent = L[k];
+  $('cf').textContent = `Confidence ${Math.round(conf * 100)}%`;
+  $('cb').style.strokeDasharray = (conf * 100) + ' 100';
+  const dir = bT > 0.3 ? `${tb} runs small, so we sized up` : bT < -0.3 ? `${tb} runs large, so we sized down` : `${tb} is close to true to size`;
+  $('rs').textContent = dir + '.';
+  // Transparency: what each input says on its own.
+  $('why').replaceChildren(...sig.map(s => {
+    const li = document.createElement('li'), a = document.createElement('span'), b = document.createElement('b');
+    a.textContent = s.label;
+    b.textContent = s.start ? '' : toSize(s.idx);
+    li.append(a, b);
+    return li;
+  }));
+  const missing = ['bust', 'hip', 'waist'].filter(n => !val[{bust: 'bu', hip: 'hi', waist: 'wa'}[n]]);
+  const level = real <= 1 ? 'Quick estimate' : real === 2 ? 'Good' : real <= 4 ? 'High' : 'Very high';
+  $('prec').textContent = `Precision: ${level} · ${real} input${real === 1 ? '' : 's'}` +
+    (missing.length && real < 5 ? ` · add ${missing.join(', ')} in “Get a more precise fit” to sharpen it` : '');
+  if (spread >= 1.5 && real > 1) notes.push('Your inputs point to different sizes. Measurements are weighted most; if in doubt, go by bust or hip.');
+  if (val.he && val.he < 155) notes.push(`At ${val.he} cm, kurtas may fall longer on you than the model. Check the length chart.`);
+  if (val.he && val.he > 170) notes.push(`At ${val.he} cm, kurtas may fall shorter on you than the model. Check the length chart.`);
+  $('notes').replaceChildren(...notes.map(t => { const p = document.createElement('p'); p.className = 'mu'; p.textContent = t; return p; }));
+  const between = d > .35;
+  const next = y > Math.round(y) ? L[Math.min(6, k + 1)] : L[Math.max(0, k - 1)];
+  $('sizeHint').textContent = between ? 'Between sizes · ' + next + ' is the next-best choice' : '';
+  $('sizeHint').classList.toggle('hid', !between);
+  const o = ub && us ? `You’re ${us} in ${ub} and ${L[k]} in ${tb}.` : '';
+  $('cmp').textContent = o ? 'Compare brands · ' + o : '';
+  $('out').classList.remove('hid');
+  updateDock();
+  if (activeView === 'shop' && matchMedia('(max-width: 899px)').matches) {
+    $('out').scrollIntoView({block: 'nearest'});
   }
 }
-for (const option of $('co').options) {
-  const chip = document.createElement('button');
-  chip.type = 'button';
-  chip.dataset.colour = option.value;
-  chip.style.setProperty('--chip', option.value);
-  chip.setAttribute('aria-label', option.text);
-  chip.title = option.text;
-  chip.onclick = () => {
-    $('co').value = option.value;
-    $('co').dispatchEvent(new Event('change', {bubbles: true}));
-  };
-  $('colourChips').append(chip);
-}
-$('co').onchange = sw;
-sw();
-function rec(){
- const tb=$('tb').value,bT=B[tb].b,ft=$('ft').value,g=D.gam,fp=+$('fp').value;
- const us=$('us').value,ub=$('ub').value,bust=parseFloat($('bu').value),use=$('c2').checked&&bust>0;
- let us_=[],why=[],info=0;
- if(us){const i=L.indexOf(us);if(ub){us_.push(i-B[ub].b);info+=.08;why.push(`You wear ${us} in ${ub}, which runs ${B[ub].b>0.3?'small':B[ub].b<-0.3?'large':'about true'}`)}else{us_.push(.874*i+.176);why.push(`You usually wear ${us}`)}}
- if(use){us_.push(D.bust[0]*bust+D.bust[1]);info+=.07;why.push(`bust ${bust} cm`)}
- if(!us_.length){us_.push(2);why.push('No size info yet, so this is a starting point (M)')}
- const u=us_.reduce((a,b)=>a+b)/us_.length;
- let y=u+bT+fp+(ft==='Slim'?g[0]:ft==='Relaxed'?g[1]:0);
- let k=Math.max(0,Math.min(6,Math.round(y)));const d=Math.abs(y-Math.round(y));
- const conf=Math.max(.4,Math.min(.8,.5+.25*(1-2*d)+info+(us_.length>1?.04:0)));
- $('sz').textContent=L[k];$('cf').textContent=`Confidence ${Math.round(conf*100)}%`;$('cb').style.strokeDasharray = (conf * 100) + ' 100';
- const dir=bT>0.3?`${tb} runs small, so we sized up`:bT<-0.3?`${tb} runs large, so we sized down`:`${tb} is close to true to size`;
- $('rs').textContent = why.join(', ') + '. ' + dir + '.';
- const between = d > .35;
- const next = y > Math.round(y) ? L[Math.min(6,k+1)] : L[Math.max(0,k-1)];
- $('sizeHint').textContent = between ? 'Between sizes · ' + next + ' is the next-best choice' : '';
- $('sizeHint').classList.toggle('hid', !between);
- const o=ub&&us?`You’re ${us} in ${ub} and ${L[k]} in ${tb}.`:'';
- $('cmp').textContent = o ? 'Compare brands · ' + o : '';
- $('out').classList.remove('hid');
- updateDock();
- if (activeView === 'shop' && matchMedia('(max-width: 899px)').matches) {
-   $('out').scrollIntoView({block: 'nearest'});
- }
-}
-$('go').onclick=rec;
+$('go').onclick = rec;
 // consent + photo
 const SID = crypto.randomUUID();
 let pendingRender = null, deleting = false, generation = 0, expiry = 0, photoExpiry = 0;
@@ -439,12 +634,25 @@ function showComparison(file, requestGeneration) {
 }
 const day = 24 * 60 * 60 * 1000;
 const adult = () => Number.isInteger(Number($('ag').value)) && Number($('ag').value) >= 18;
+let thumbFile = null, thumbUrl = null;
 
 function sync() {
-  $('ph').disabled = !photoConfigLoaded || !$('c1').checked || !adult() || deleting ||
-    (remoteBackend && !$('teamCode').value);
-  $('rn').disabled = $('ph').disabled || !!pendingRender || !$('ph').files[0] ||
-    !($('gf').files[0] || $('gs').value);
+  const file = $('ph').files[0] || null;
+  if (file !== thumbFile) {
+    if (thumbUrl) URL.revokeObjectURL(thumbUrl);
+    thumbFile = file;
+    thumbUrl = file ? URL.createObjectURL(file) : null;
+    if (thumbUrl) $('phThumb').src = thumbUrl; else $('phThumb').removeAttribute('src');
+    $('phThumb').classList.toggle('hid', !file);
+  }
+  const need = [];
+  if (!photoConfigLoaded) need.push('wait for the server to respond');
+  if (!file) need.push('choose a photo');
+  if (!$('c1').checked) need.push('tick the photo consent');
+  if (!adult()) need.push('enter your age (18+)');
+  if (remoteBackend && !$('teamCode').value) need.push('enter the team access code');
+  $('tryNeeds').textContent = need.length ? 'To see it on you: ' + need.join(', ') + '.' : '';
+  $('rn').disabled = need.length > 0 || !!pendingRender || deleting;
   $('del').disabled = deleting;
   updateDock();
 }
@@ -469,7 +677,7 @@ async function erasePhoto() {
     body.append('session', SID);
     const response = await fetch('/api/delete', {method: 'POST', body});
     if (!response.ok || !(await response.json()).deleted) throw new Error();
-    $('msg').textContent = 'Threadline deleted the photo and preview from this tab and its server.';
+    $('msg').textContent = 'FitCheck deleted the photo and preview from this tab and its server.';
     toast($('msg').textContent);
   } catch {
     $('msg').textContent = 'The local preview was cleared. Server deletion could not be confirmed. Please try again.';
@@ -479,24 +687,26 @@ async function erasePhoto() {
     sync();
   }
 }
-$('ag').oninput = () => {
-  if (!adult() && $('ph').files[0]) erasePhoto();
+$('ag').oninput = sync;
+$('ag').onchange = () => {
+  if ($('ag').value && !adult() && $('ph').files[0]) erasePhoto();
   sync();
 };
 $('c1').onchange = () => {
   if (!$('c1').checked) erasePhoto();
   sync();
 };
+const BODY = ['bu', 'wa', 'hi', 'he', 'we'];
 $('c2').onchange = () => {
   if (!$('c2').checked) {
-    $('bu').value = '';
+    BODY.forEach(id => { $(id).value = ''; });
     $('out').classList.add('hid');
     updateDock();
   }
-  $('bu').disabled = !$('c2').checked;
+  BODY.forEach(id => { $(id).disabled = !$('c2').checked; });
 };
 $('c2').onchange();
-for (const id of ['ph', 'gf', 'gs']) {
+for (const id of ['ph', 'gf']) {
   $(id).onchange = () => {
     if (id === 'ph') {
       clearTimeout(photoExpiry);
@@ -504,22 +714,19 @@ for (const id of ['ph', 'gf', 'gs']) {
     }
     clearPreview();
     $('msg').textContent = '';
-    for (const thumb of $('garmentThumbs').children) {
-      thumb.setAttribute('aria-pressed', String(thumb.dataset.garment === $('gs').value && !$('gf').files[0]));
-    }
     sync();
   };
 }
 const drop = $('photoDrop');
 drop.ondragover = event => {
   event.preventDefault();
-  if (!$('ph').disabled) drop.dataset.dragging = '';
+  drop.dataset.dragging = '';
 };
 drop.ondragleave = () => { delete drop.dataset.dragging; };
 drop.ondrop = event => {
   event.preventDefault();
   delete drop.dataset.dragging;
-  if ($('ph').disabled || !event.dataTransfer.files.length) return;
+  if (!event.dataTransfer.files.length) return;
   const file = event.dataTransfer.files[0];
   if (!['image/jpeg','image/png','image/webp'].includes(file.type)) {
     $('msg').textContent = 'Choose a JPG, PNG or WebP photo.';
@@ -530,34 +737,7 @@ drop.ondrop = event => {
   $('ph').files = transfer.files;
   $('ph').dispatchEvent(new Event('change', {bubbles: true}));
 };
-fetch('/api/garments').then(response => {
-  if (!response.ok) throw new Error();
-  return response.json();
-}).then(names => {
-  for (const name of names) {
-    $('gs').add(new Option(name, name));
-    const thumb = document.createElement('button');
-    thumb.type = 'button';
-    thumb.dataset.garment = name;
-    thumb.setAttribute('aria-pressed', 'false');
-    const image = document.createElement('img');
-    image.src = '/garments/' + encodeURIComponent(name);
-    image.alt = '';
-    image.loading = 'lazy';
-    image.onerror = () => { image.hidden = true; };
-    thumb.append(image, document.createTextNode(name));
-    thumb.onclick = () => {
-      $('gf').value = '';
-      $('gs').value = name;
-      $('gs').dispatchEvent(new Event('change', {bubbles: true}));
-    };
-    $('garmentThumbs').append(thumb);
-  }
-  $('garmentStatus').textContent = names.length ? '' : 'No sample kurtas yet. Upload a kurta image above.';
-  $('garmentSelect').hidden = names.length > 0;
-}).catch(() => {
-  $('garmentStatus').textContent = 'Could not load sample kurtas. You can still upload a kurta image.';
-});
+
 $('teamCode').oninput = sync;
 fetch('/api/tryon-config').then(response => {
   if (!response.ok) throw new Error();
@@ -565,8 +745,8 @@ fetch('/api/tryon-config').then(response => {
 }).then(config => {
   remoteBackend = config.remote_backend;
   if (remoteBackend) {
-    const provider = remoteBackend === 'hf' ? 'Hugging Face' : 'Replicate';
-    $('photoPrivacy').textContent = `I am a consenting adult team member. Threadline sends my photo to ${provider}, a third-party model host, to create the preview. Threadline deletes its copies on request or within 24 hours. The host may retain or log the photo.`;
+    const provider = {hf: 'Hugging Face', replicate: 'Replicate', gemini: 'Google Gemini'}[remoteBackend];
+    $('photoPrivacy').textContent = `I am a consenting adult team member. FitCheck sends my photo to ${provider}, a third-party model host, to create the preview. FitCheck deletes its copies on request or within 24 hours. The host may retain or log the photo.`;
     $('teamAccess').classList.remove('hid');
   }
   photoConfigLoaded = true;
@@ -587,11 +767,16 @@ $('rn').onclick = async () => {
     body.append('consent_remote', remoteBackend);
     body.append('team_code', $('teamCode').value);
   }
-  body.append('desc', $('co').selectedOptions[0].text + ' kurta');
+  body.append('desc', cur.p.cols[cur.c].name + ' ' + cur.p.name);
   const photo = $('ph').files[0];
   body.append('photo', photo);
-  if ($('gf').files[0]) body.append('garment', $('gf').files[0]);
-  else body.append('garment_name', $('gs').value);
+  let garmentFile = $('gf').files[0];
+  if (!garmentFile) {
+    $('rn').disabled = true;
+    try { garmentFile = await catalogGarment(); }
+    catch { $('msg').textContent = 'Could not prepare the kurta image. Upload one instead.'; sync(); return; }
+  }
+  body.append('garment', garmentFile);
   $('msg').textContent = 'Checking the photo and preparing the preview…';
   renderProgress(true);
   pendingRender = (async () => {
@@ -617,6 +802,7 @@ $('rn').onclick = async () => {
       const reason = {
         mock_mode: 'Demo mode is active.',
         model_unavailable: 'The try-on model is unavailable.',
+        quota_exceeded: 'The try-on provider says the usage quota is exhausted. Enable billing or wait for the quota to reset.',
         preservation_check: 'The preview did not pass the clothing-only check.'
       }[result.placeholder_reason];
       $('msg').textContent = result.mock
@@ -643,7 +829,6 @@ $('del').onclick = () => {
   $('c2').onchange();
   $('ag').value = '';
   $('gf').value = '';
-  $('gs').value = '';
   erasePhoto();
 };
 sync();

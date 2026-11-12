@@ -1,5 +1,5 @@
 ---
-title: Threadline Fit and Try-On
+title: FitCheck Fit and Try-On
 emoji: 🧵
 colorFrom: pink
 colorTo: purple
@@ -8,7 +8,7 @@ app_port: 7860
 pinned: false
 ---
 
-# Threadline Fit & Try-On (PS-13)
+# FitCheck Fit & Try-On (PS-13)
 
 Women's kurta size recommendations, a simulated try-on preview, and Fit & Returns analysis. The original recommendation inputs, coefficients, and Results tab are preserved.
 
@@ -55,7 +55,7 @@ Use these commands with a Hugging Face account eligible to create Docker Spaces.
 $hf = './.venv/Scripts/hf.exe'
 & $hf auth login
 & $hf auth whoami
-$space = 'YOUR_NAMESPACE/threadline-fit-tryon'
+$space = 'YOUR_NAMESPACE/fitcheck-fit-tryon'
 & $hf repos create $space --type space --sdk docker --public
 & $hf spaces variables add $space -e MOCK=1
 & $hf upload $space . . --repo-type space --include README.md --include Dockerfile --include requirements.txt --include server.py --include tryon_model.py --include .dockerignore --include 'static/**'
@@ -92,7 +92,7 @@ This writes `PS-13_fit_test_set_rendered.xlsx` and prints the server-side locati
 - The server retains only the latest labeled preview for each session, removes it on deletion, and sweeps expired previews after 24 hours on a one-minute cycle. An active render and deletion are serialized. The API marks private responses as noncacheable.
 - Photo checks and clothing segmentation run locally. The app has no training pipeline. The app's metrics CSV holds only latency, known cost, and the mock flag. Run a single worker for consistent in-memory preview limits.
 - The pose and clothing models can misclassify images. The clothing check copies generated pixels only where both images show high-confidence clothing, with a margin at the edges. Absolute preservation of face, skin tone, and body shape has not been established. This constraint can also reduce the fidelity of longer kurtas.
-- Threadline deletes the copies it controls. Hugging Face may retain or log inputs and does not expose a verified per-upload deletion contract. Replicate's API retention does not imply deletion when Threadline's button is pressed. The team demo uses explicit consent to this limitation. A shopper rollout requires a controlled inference service that deletes all copies on request, prohibits training, and validates the protected regions.
+- FitCheck deletes the copies it controls. Hugging Face may retain or log inputs and does not expose a verified per-upload deletion contract. Replicate's API retention does not imply deletion when FitCheck's button is pressed. The team demo uses explicit consent to this limitation. A shopper rollout requires a controlled inference service that deletes all copies on request, prohibits training, and validates the protected regions.
 - A consented team photo, eligible kurta image, and actual evaluation workbook were unavailable in this workspace. No live image render, provider billing, or public deployment has been verified.
 
 ## Local verification

@@ -1,0 +1,12 @@
+[
+  {
+    "brand": "Vastrika",
+    "name": "Everyday Straight Kurta",
+    "price": 1299,
+    "fit": "Regular",
+    "variants": [
+      {"sku": "VAS-KUR-001-MUS", "colour": "Mustard",  "hex": "#c58a12", "image": "VAS-KUR-001-MUS.jpg"},
+      {"sku": "VAS-KUR-001-SKY", "colour": "Sky blue", "hex": "#2f6f9f", "image": "VAS-KUR-001-SKY.jpg"}
+    ]
+  }
+]

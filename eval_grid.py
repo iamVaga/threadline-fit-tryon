@@ -1,4 +1,4 @@
-"""Run a consented PS-13 workbook through the local Threadline HTTP API."""
+"""Run a consented PS-13 workbook through the local FitCheck HTTP API."""
 import argparse
 import csv
 import math

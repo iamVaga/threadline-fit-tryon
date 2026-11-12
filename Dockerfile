@@ -10,8 +10,8 @@ RUN curl -fsSL -o pose_landmarker_lite.task https://storage.googleapis.com/media
     && echo "c6748b1253a99067ef71f7e26ca71096cd449baefa8f101900ea23016507e0e0  selfie_multiclass_256x256.tflite" | sha256sum -c -
 COPY server.py tryon_model.py ./
 COPY static/ ./static/
-RUN mkdir -p /app/static/garments /tmp/threadline-sessions && chown 1000:1000 /tmp/threadline-sessions
+RUN mkdir -p /app/static/garments /tmp/fitcheck-sessions && chown 1000:1000 /tmp/fitcheck-sessions
 USER 1000:1000
-ENV PORT=7860 TMP_DIR=/tmp/threadline-sessions LOG_FILE=/tmp/threadline-render.csv GRADIO_ANALYTICS_ENABLED=False MPLCONFIGDIR=/tmp/threadline-matplotlib
+ENV PORT=7860 TMP_DIR=/tmp/fitcheck-sessions LOG_FILE=/tmp/fitcheck-render.csv GRADIO_ANALYTICS_ENABLED=False MPLCONFIGDIR=/tmp/fitcheck-matplotlib
 EXPOSE 7860
 CMD ["sh", "-c", "exec uvicorn server:app --host 0.0.0.0 --port ${PORT} --workers 1 --no-access-log"]

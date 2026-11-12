@@ -1,0 +1,10 @@
+[
+  {"brand": "Vastrika", "name": "Printed Sleeveless Straight Kurta", "price": 1299, "fit": "Regular",
+   "variants": [{"sku": "VAS-KUR-001-GRN", "colour": "Green", "hex": "#5fc23a", "image": "VAS-KUR-001-GRN.jpg"}]},
+  {"brand": "Aarvi", "name": "Block-Print Cotton Kurta", "price": 1499, "fit": "Regular",
+   "variants": [{"sku": "AAR-KUR-002-CRM", "colour": "Cream", "hex": "#efe6d2", "image": "AAR-KUR-002-CRM.jpg"}]},
+  {"brand": "Kesar Lane", "name": "Chikankari Long-Sleeve Kurta", "price": 1899, "fit": "Slim",
+   "variants": [{"sku": "KES-KUR-003-YEL", "colour": "Yellow", "hex": "#f2d11a", "image": "KES-KUR-003-YEL.jpg"}]},
+  {"brand": "Chandni Lane", "name": "Chikankari Three-Quarter Kurta", "price": 2199, "fit": "Regular",
+   "variants": [{"sku": "CHA-KUR-004-RED", "colour": "Red", "hex": "#e8503a", "image": "CHA-KUR-004-RED.jpg"}]}
+]
