@@ -1,0 +1,116 @@
+{
+  "version": "ps13-fit-2026-10-01-bb2fa5a840",
+  "slices": {
+    "All cases": {
+      "n": 2841,
+      "exact": 1777,
+      "within": 2265,
+      "first": 2449,
+      "usual": 1382,
+      "usualN": 1830
+    },
+    "Kept after exchange": {
+      "n": 390,
+      "exact": 152,
+      "within": 186,
+      "first": 0,
+      "usual": 37,
+      "usualN": 254
+    },
+    "Women · Kurtas": {
+      "n": 574,
+      "exact": 361,
+      "within": 442,
+      "first": 478,
+      "usual": 244,
+      "usualN": 363
+    },
+    "Women · Kurtas after exchange": {
+      "n": 95,
+      "exact": 35,
+      "within": 43,
+      "first": 0,
+      "usual": 7,
+      "usualN": 60
+    },
+    "Kept first size": {
+      "n": 2451,
+      "exact": 1625,
+      "within": 2079,
+      "first": 2449,
+      "usual": 1345,
+      "usualN": 1576
+    },
+    "Women · Jeans": {
+      "n": 249,
+      "exact": 118,
+      "within": 160,
+      "first": 212,
+      "usual": 85,
+      "usualN": 119
+    },
+    "Women · Tops": {
+      "n": 512,
+      "exact": 335,
+      "within": 433,
+      "first": 446,
+      "usual": 270,
+      "usualN": 342
+    },
+    "Men · T-shirts": {
+      "n": 375,
+      "exact": 243,
+      "within": 319,
+      "first": 338,
+      "usual": 224,
+      "usualN": 276
+    },
+    "Women · Dresses": {
+      "n": 331,
+      "exact": 220,
+      "within": 267,
+      "first": 284,
+      "usual": 173,
+      "usualN": 222
+    },
+    "No kept or exchanged history in this size category": {
+      "n": 564,
+      "exact": 276,
+      "within": 396,
+      "first": 485,
+      "usual": 251,
+      "usualN": 336
+    },
+    "Men · Jeans": {
+      "n": 236,
+      "exact": 141,
+      "within": 190,
+      "first": 216,
+      "usual": 96,
+      "usualN": 118
+    },
+    "Men · Shirts": {
+      "n": 425,
+      "exact": 273,
+      "within": 350,
+      "first": 367,
+      "usual": 226,
+      "usualN": 290
+    },
+    "Men · Kurtas": {
+      "n": 139,
+      "exact": 86,
+      "within": 104,
+      "first": 108,
+      "usual": 64,
+      "usualN": 100
+    }
+  },
+  "examples": {
+    "FT-10001": "M",
+    "FT-10022": "L",
+    "FT-10024": "L",
+    "FT-10025": "XL",
+    "FT-10026": "32"
+  }
+}

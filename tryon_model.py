@@ -47,7 +47,6 @@ def check_photo(image):
         base_options=mp.tasks.BaseOptions(model_asset_path=str(POSE_MODEL)),
         num_poses=2,
         min_pose_detection_confidence=0.4,
-        output_segmentation_masks=True,
     )
     with mp.tasks.vision.PoseLandmarker.create_from_options(options) as detector:
         result = detector.detect(mp_image(reduced))
@@ -58,15 +57,16 @@ def check_photo(image):
         return "Please retake the photo with just one person in the frame."
 
     pose = poses[0]
-    # The kurta covers shoulders to hips, so only the torso has to be in frame and visible.
-    # Head and feet may be cropped.
-    torso_missing = any(
-        not (0.0 < pose[index].x < 1.0 and 0.0 < pose[index].y < 1.0
+    required = (0, 2, 5, 11, 12, 23, 24, 27, 28, 29, 30, 31, 32)
+    cropped = any(
+        not (0.0 < pose[index].x < 1.0 and 0.01 < pose[index].y < 0.99
              and pose[index].visibility >= 0.5 and pose[index].presence >= 0.5)
-        for index in (11, 12, 23, 24)  # shoulders and hips
+        for index in required  # face, shoulders, hips, ankles, heels and toes
     )
-    if torso_missing:
-        return "Please retake the photo so your shoulders and hips are clearly visible."
+    eye_y = min(pose[2].y, pose[5].y)
+    shoulder_y = min(pose[11].y, pose[12].y)
+    if cropped or eye_y < 0.25 * (shoulder_y - eye_y):
+        return "Please step back and retake the photo with your full head and both feet visible."
     return None
 
 
@@ -75,8 +75,7 @@ def clothing_mask(segmenter, image):
     # Google SelfieMulticlass: class 4 is clothing. This model's confidences peak below 0.95,
     # so a higher threshold finds no clothing at all.
     confidence = result.confidence_masks[4].numpy_view()
-    mask = Image.fromarray(np.where(confidence.squeeze() >= 0.5, 255, 0).astype(np.uint8))
-    return mask.filter(ImageFilter.MaxFilter(5))  # slight grow so no sliver of the old garment survives
+    return Image.fromarray(np.where(confidence.squeeze() >= 0.5, 255, 0).astype(np.uint8))
 
 
 def remote_backend():
@@ -178,13 +177,13 @@ def _run_on(person, garment, desc, session_folder, backend, token):
                     generated = replicate_tryon(person_path, garment_path, desc, token)
             if generated.size != size:
                 return person, "preservation_check"
-            # Union: replace wherever the old OR the new kurta is, and nowhere else.
-            mask = ImageChops.lighter(original_mask, clothing_mask(segmenter, generated))
+            # Limit edits to areas identified as clothing in both photos.
+            mask = ImageChops.darker(original_mask, clothing_mask(segmenter, generated))
             if not mask.getbbox():
                 return person, "preservation_check"
-            # Paste only the new kurta pixels onto the ORIGINAL full-resolution photo, so every
-            # pixel outside the kurta is byte-for-byte the user's own.
-            mask = mask.crop(box).resize(person.size, Image.LANCZOS).filter(ImageFilter.GaussianBlur(0.8))
+            # Feather inside the overlap, keeping the alpha at zero outside it.
+            hard_mask = mask.crop(box).resize(person.size, Image.Resampling.NEAREST)
+            mask = ImageChops.darker(hard_mask, hard_mask.filter(ImageFilter.GaussianBlur(0.8)))
             generated = generated.crop(box).resize(person.size, Image.LANCZOS)
             return Image.composite(generated, person, mask), None
     except httpx.HTTPStatusError as error:

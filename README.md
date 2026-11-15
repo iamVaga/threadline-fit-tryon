@@ -10,7 +10,7 @@ pinned: false
 
 # FitCheck Fit & Try-On (PS-13)
 
-Women's kurta size recommendations, a simulated try-on preview, and Fit & Returns analysis. The original recommendation inputs, coefficients, and Results tab are preserved.
+Women's kurta size recommendations, simulated try-on, and retailer return analysis. The shop and October evaluation use the same browser recommender. The shopper can search the supplied kurta catalogue by SKU and add a usual size, a kept purchase or optional measurements. Measurements stay in the tab.
 
 ## Run locally on Windows
 
@@ -74,26 +74,35 @@ For the team-only Hugging Face demo, set `MOCK=0`, `TRYON_REMOTE=1`, `HF_TOKEN` 
 
 ## Sample kurtas
 
-Add three to five publishable, clean flat-lay or mannequin images to `static/garments/`. Use your own photos or dataset images with permission to redistribute them in a public Space. The sample list populates automatically. An upload also works. No sample images shipped with the archive.
+The shop has four demo photos and the synthetic PS-13 kurta catalogue. Catalogue entries without a matching product photo accept a garment upload. Use clean flat-lay or mannequin images with permission to use them for try-on.
+
+## Reproduce the size benchmark
+
+```powershell
+& $py train_fit.py "path/to/PS-13/Data"
+node evaluate_fit.mjs
+```
+
+Training uses mature kept and exchanged outcomes before October. The browser receives fitted coefficients, catalogue data and five synthetic examples from the brief. Raw workbooks and per-case audit files stay in local storage. The evaluator scores all 2,841 cases through the same engine and writes the public aggregate results and a private per-case CSV under `.local/`. The evidence labels show the strength of available inputs. They are qualitative.
 
 ## Evaluation workbook
 
-Place `PS-13_fit_test_set.xlsx` in the project root and put the images referenced by the `tryon_eval_grid` sheet in `photos/` and `static/garments/`. The worksheet must provide separate photo and garment filename columns. If the headers are unusual, pass `--photo-column "Actual header"` and `--garment-column "Actual header"`.
+Keep the supplied `PS-13_fit_test_set.xlsx` unchanged. Create a private CSV with columns `case_id,photo,garment`, one row per selected grid case. Keep the consented person photos in `photos/` and the evaluation garments in a private directory. Use the relevant local folder paths with `--photos` and `--garments`.
 
 ```powershell
-& $py eval_grid.py --confirm-consented-adults
+& $py eval_grid.py --workbook "path/to/PS-13_fit_test_set.xlsx" --assets-csv .local/tryon_assets.csv --photos photos --garments .local/garments --confirm-consented-adults
 ```
 
-This writes `PS-13_fit_test_set_rendered.xlsx` and prints the server-side location of each successful labeled preview. Previews follow the same deletion rules as interactive sessions. The script writes measured latency only for real renders, leaves the five human score fields blank, and skips metrics for rejected cases or placeholders. To fill costs verified against billing, pass `--measured-cost-csv costs.csv` with columns `worksheet_row,cost_per_render_inr` and one entry per charged case. Costs stay blank when they cannot be attributed to a row.
+This writes `PS-13_fit_test_set_rendered.xlsx`. The helper records successful request latency through receipt of the image response and prints where the preview is stored. A human reviewer scores image quality and checks the label. Failed attempts are recorded in Notes. To fill verified billing costs, pass `--measured-cost-csv costs.csv` with columns `worksheet_row,cost_per_render_inr` and one entry per charged case.
 
 ## Privacy and limits
 
 - Photo processing requires separate consent and a self-declared age of 18+. Measurement consent gates client-side size advice. Measurement values never go to the server.
 - The server retains only the latest labeled preview for each session, removes it on deletion, and sweeps expired previews after 24 hours on a one-minute cycle. An active render and deletion are serialized. The API marks private responses as noncacheable.
-- Photo checks and clothing segmentation run locally. The app has no training pipeline. The app's metrics CSV holds only latency, known cost, and the mock flag. Run a single worker for consistent in-memory preview limits.
+- Photo checks and clothing segmentation run locally. The size engine trains offline on synthetic order data. The app's render metrics CSV holds latency, known cost, and the mock flag. Run a single worker for consistent preview limits and revocation of deleted sessions.
 - The pose and clothing models can misclassify images. The clothing check copies generated pixels only where both images show high-confidence clothing, with a margin at the edges. Absolute preservation of face, skin tone, and body shape has not been established. This constraint can also reduce the fidelity of longer kurtas.
 - FitCheck deletes the copies it controls. Hugging Face may retain or log inputs and does not expose a verified per-upload deletion contract. Replicate's API retention does not imply deletion when FitCheck's button is pressed. The team demo uses explicit consent to this limitation. A shopper rollout requires a controlled inference service that deletes all copies on request, prohibits training, and validates the protected regions.
-- A consented team photo, eligible kurta image, and actual evaluation workbook were unavailable in this workspace. No live image render, provider billing, or public deployment has been verified.
+- Provider billing, model quality and protected-region preservation need verification using the consented evaluation grid.
 
 ## Local verification
 

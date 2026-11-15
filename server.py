@@ -65,7 +65,7 @@ def purge_expired():
     for lock, counts in zip(LOCKS, COUNTS):
         if lock.acquire(blocking=False):
             try:
-                expired = [session for session, (_, until) in counts.items() if until <= now]
+                expired = [session for session, (_, until, _) in counts.items() if until <= now]
                 for session in expired:
                     del counts[session]
             finally:
@@ -201,7 +201,9 @@ def tryon(session: str = Form(...), age: int = Form(0), consent_photo: str = For
     stripe = lock_index(session)
     with LOCKS[stripe]:
         counts = COUNTS[stripe]
-        count, until = counts.get(session, (0, 0))
+        count, until, deleted = counts.get(session, (0, 0, False))
+        if deleted and time.time() < until:
+            return error("This photo session was deleted. Start a new preview.", 410)
         if time.time() >= until:
             count = 0
         if count >= MAX_RENDERS:
@@ -243,7 +245,7 @@ def tryon(session: str = Form(...), age: int = Form(0), consent_photo: str = For
         temporary.write_bytes(preview)
         temporary.replace(folder / "result.jpg")
         os.utime(folder, None)
-        counts[session] = (count + 1, time.time() + PURGE_S)
+        counts[session] = (count + 1, time.time() + PURGE_S, False)
         log(elapsed, cost, mock)
         return JSONResponse({
             "image": "data:image/jpeg;base64," + base64.b64encode(preview).decode("ascii"),
@@ -256,18 +258,21 @@ def tryon(session: str = Form(...), age: int = Form(0), consent_photo: str = For
 def delete(session: str = Form(...)):
     if not canonical_session(session):
         return error("Invalid session.", 422)
-    with LOCKS[lock_index(session)]:
+    stripe = lock_index(session)
+    with LOCKS[stripe]:
         try:
             shutil.rmtree(TMP / session)
         except FileNotFoundError:
             pass
         except OSError:
             return error("Server deletion failed. Please try again.", 503)
+        COUNTS[stripe][session] = (0, time.time() + PURGE_S, True)
     return JSONResponse({"deleted": True}, headers=NO_STORE)
 
 
 app.mount("/products", StaticFiles(directory=PRODUCTS), name="products")
 app.mount("/garments", StaticFiles(directory=GARMENTS), name="garments")
+app.mount("/fit", StaticFiles(directory=ROOT / "static" / "fit"), name="fit")
 
 
 @app.get("/")
