@@ -22,6 +22,7 @@ import numpy as np
 
 from tryon_model import ROOT, check_photo, read_image, remote_backend, run_model
 from recommender import model, predict
+from setup_models import ensure_models
 from pydantic import BaseModel, Field
 
 TMP = Path(os.getenv("TMP_DIR", str(Path(tempfile.gettempdir()) / "fitcheck-sessions")))
@@ -82,6 +83,10 @@ def purge_expired():
 @asynccontextmanager
 async def lifespan(_app):
     model()
+    try:
+        ensure_models()
+    except Exception as exc:  # photo checks will report 503 until the models exist
+        print(f"WARNING: could not fetch photo-check models: {exc}")
     TMP.mkdir(parents=True, exist_ok=True, mode=0o700)
     stop = threading.Event()
 
@@ -254,7 +259,21 @@ def catalog():
         if isinstance(filename, str) and Path(filename).name == filename and (PRODUCTS / filename).is_file():
             variant["image"] = "/products/" + filename
         items.append({"sku_id": sku, "brand": p["brand"], "name": p["product_name"],
-                      "fit": p["fit_type"], "price": p["mrp_inr"], "variants": [variant]})
+                      "fit": p["fit_type"], "price": p["mrp_inr"], "currency": "INR",
+                      "garment_category": "one-pieces", "variants": [variant]})
+    free = []
+    for name in ("free_catalog.json", "indo_catalog.json"):
+        try:
+            free += json.loads((PRODUCTS / name).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            pass
+    for f in free:
+        if Path(f["image"]).name != f["image"] or not (PRODUCTS / f["image"]).is_file():
+            continue
+        items.append({"sku_id": f["sku_id"], "brand": f["brand"], "name": f["name"], "fit": f["fit"],
+                      "price": f["price"], "currency": f["currency"], "garment_category": f["garment_category"],
+                      "free": True, "variants": [{"sku": f["sku_id"], "colour": f["colour"], "hex": f["hex"],
+                                                  "image": "/products/" + f["image"]}]})
     return JSONResponse(items, headers=NO_STORE)
 
 
@@ -351,7 +370,8 @@ def tryon(session: str = Form(...), age: int = Form(0), consent_photo: str = For
                          422, rejected_before_render=True)
         try:
             retake = check_photo(person)
-        except (RuntimeError, ValueError, OSError):
+        except (RuntimeError, ValueError, OSError) as exc:
+            print(f"Photo check failed: {exc!r}")
             return error("Photo checks are temporarily unavailable. Please try again later.",
                          503, rejected_before_render=True)
         if retake:

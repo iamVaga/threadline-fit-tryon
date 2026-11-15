@@ -394,14 +394,14 @@ function kurtaSvg(hex, shape, flat) {
     `<path d="${outline}" fill="${hex}" stroke="${edge}" stroke-width="1.1" stroke-linejoin="round"/>` +
     `<path d="M50 25v38M44 80h12${hem}" fill="none" stroke="${edge}" stroke-width="1" stroke-linecap="round"/></svg>`;
 }
-const money = n => '₹' + Number(n).toLocaleString('en-IN');
+const money = (n, c) => n == null ? 'Price n/a' : (c === 'USD' ? '$' : '₹') + Number(n).toLocaleString(c === 'USD' ? 'en-US' : 'en-IN');
 const cur = {p: null, c: 0};
 function renderCatalog() {
   const q = $('cs').value.trim().toLowerCase(), br = $('cbrand').value, so = $('csort').value;
   const list = CAT.filter(p => (!br || p.brand === br) &&
     (!q || (p.brand + ' ' + p.name + ' ' + p.cols.map(c => c.name).join(' ')).toLowerCase().includes(q)));
-  if (so === 'lo') list.sort((a, b) => a.price - b.price);
-  if (so === 'hi') list.sort((a, b) => b.price - a.price);
+  if (so === 'lo') list.sort((a, b) => (a.price ?? 1e9) - (b.price ?? 1e9));
+  if (so === 'hi') list.sort((a, b) => (b.price ?? -1) - (a.price ?? -1));
   $('catalogMore').classList.toggle('hid', list.length <= visibleProducts);
   $('catalog').replaceChildren(...list.slice(0, visibleProducts).map(p => {
     const card = document.createElement('button');
@@ -419,7 +419,7 @@ function renderCatalog() {
     name.textContent = p.name;
     brand.className = price.className = 'mu';
     brand.textContent = p.brand;
-    price.textContent = `${money(p.price)} · ${p.cols.length} colours`;
+    price.textContent = `${money(p.price, p.currency)} · ${p.cols.length} colours`;
     card.append(tile, name, brand, price);
     card.dataset.id = p.id;
     card.onclick = () => selectProduct(p);
@@ -436,7 +436,7 @@ function renderPicked() {
   } else $('swSvg').innerHTML = kurtaSvg(hex, p.shape);
   $('swName').textContent = cn;
   $('pn').textContent = p.name;
-  $('pmeta').textContent = `${p.brand} · ${money(p.price)} · ${p.fit} fit` + (v.sku ? ` · SKU ${v.sku}` : '');
+  $('pmeta').textContent = `${p.brand} · ${money(p.price, p.currency)} · ${p.fit} fit` + (v.sku ? ` · SKU ${v.sku}` : '');
   $('tryOn').textContent = `Trying on: ${cn} ${p.name} · ${p.brand}`;
   $('colourChips').replaceChildren(...p.cols.map(({name, hex: value}, i) => {
     const chip = document.createElement('button');
@@ -474,10 +474,10 @@ fetch('/api/catalog').then(response => {
   return response.json();
 }).then(items => {
   CAT = items.map(item => ({id:item.sku_id, brand:item.brand, name:item.name, price:item.price,
-    fit:item.fit, shape:'straight', cols:item.variants.map(v => ({name:v.colour, hex:v.hex, image:v.image, sku:v.sku}))}));
+    fit:item.fit, shape:'straight', currency:item.currency, gcat:item.garment_category, free:!!item.free, cols:item.variants.map(v => ({name:v.colour, hex:v.hex, image:v.image, sku:v.sku}))}));
   const available = [...new Set(CAT.map(item => item.brand))].sort();
   for (const id of ['cbrand','ub']) $(id).replaceChildren(new Option(id === 'ub' ? 'Not sure / other brand' : 'All brands',''), ...available.map(brand => new Option(brand)));
-  $('catNote').textContent = 'Synthetic catalogue. Illustrations identify products. Use a garment-only photo for try-on.';
+  $('catNote').textContent = 'Synthetic kurta catalogue plus free sample clothing from DummyJSON, Fake Store and Indo Fashion images. Size advice covers the synthetic kurtas only.';
   if (CAT.length) selectProduct(CAT[0]);
   renderCatalog();
 }).catch(() => {
@@ -833,6 +833,7 @@ $('rn').onclick = async () => {
   if (remoteBackend) {
     body.append('consent_remote', remoteBackend);
   }
+  body.append('garment_category', cur.p?.gcat || 'one-pieces');
   body.append('desc', cur.p ? cur.p.cols[cur.c].name + ' ' + cur.p.name : 'kurta');
   const photo = $('ph').files[0];
   body.append('photo', photo);
