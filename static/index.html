@@ -1,261 +1,117 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>FitCheck Fit & Try-On</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Inter:wght@400;500;600;650;700;750&amp;display=swap" rel="stylesheet">
-<style>
-:root {
-  color-scheme:dark;
-  --ivory:#000; --surface:#0a0a0a; --sand:#151515; --line:#262b26;
-  --ink:#f2fff2; --muted:#9fab9f; --plum:#39ff14; --on-plum:#000;
-  --hero:#0c2308; --marigold:#ffd000; --ochre:#39ff14; --focus:#39ff14;
-  --green:#39ff14; --green-bg:#0f2a0b; --rose:#ff8aa0; --rose-bg:#2b1017;
-  --amber-bg:#10250b; --control:#5f705f; --tile-ink:#000; --tile-paper:#fff;
-  --shadow:0 0 0 1px #39ff1418, 0 12px 40px #39ff1410;
-  --display:"Space Grotesk",system-ui,sans-serif; --ui:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --radius:20px; --ease:180ms ease; --compare:50%;
-}
-*,*::before,*::after { box-sizing:border-box; }
-html { scroll-padding-block:16px 112px; }
-body { margin:0; background:var(--ivory); color:var(--ink); font:15px/1.65 var(--ui); }
-main { width:min(100%,1200px); margin:auto; padding:14px 14px 108px; }
-h1,h2,h3 { margin:0; font:600 22px/1.15 var(--display); }
-h3 { font-size:17px; }
-p { margin:0; }
-p+p { margin-top:12px; }
-button,input,select { font:inherit; }
-button { cursor:pointer; }
-button:disabled { cursor:default; }
-:focus-visible { outline:3px solid var(--focus); outline-offset:3px; }
-.hid,[hidden] { display:none!important; }
-.mu { color:var(--muted); font-size:13px; }
-.eyebrow { display:block; color:var(--ochre); font-size:13px; font-weight:750; letter-spacing:.1em; text-transform:uppercase; }
-.hero { position:relative; display:grid; gap:10px; padding:25px 22px; border:1px solid var(--line); border-radius:var(--radius); background:linear-gradient(124deg,var(--surface),var(--hero)); box-shadow:var(--shadow); }
-.hero-mark { display:none; }
-.hero h1 { font-size:clamp(36px,8vw,72px); letter-spacing:-.04em; color:var(--plum); text-shadow:0 0 28px #39ff1466; }
-.hero .subtitle { font:600 clamp(22px,3.7vw,32px)/1.2 var(--display); }
-.hero .trust { display:flex; flex-wrap:wrap; gap:4px 8px; align-items:center; color:var(--ink); font-size:13px; font-weight:650; }
-.trust span[aria-hidden] { color:var(--ochre); }
-nav { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; padding:4px; margin:15px 0; border:1px solid var(--line); border-radius:16px; background:var(--sand); }
-nav button,.stepper button { border:0; color:var(--muted); background:transparent; border-radius:12px; min-height:44px; font-weight:700; font-size:13px; transition:background var(--ease),color var(--ease),transform var(--ease); }
-nav button.on { background:var(--plum); color:var(--on-plum); }
-nav button:not(.on):hover,.stepper button:hover { background:var(--surface); color:var(--ink); }
-.stepper { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; padding:0; margin:0 0 15px; list-style:none; }
-.stepper button { width:100%; display:flex; align-items:center; justify-content:center; gap:5px; padding:4px 2px; font-size:13px; line-height:1.2; }
-.stepper b,.step-index { display:inline-grid; flex:none; place-items:center; width:25px; height:25px; border:1px solid var(--control); border-radius:50%; font-size:13px; }
-.stepper [aria-current="step"] { color:var(--plum); background:var(--sand); }
-.stepper [aria-current="step"] b,.step-index { background:var(--plum); color:var(--on-plum); border-color:transparent; }
-.shop-grid,#fit,#rb { display:grid; gap:15px; min-width:0; }
-.card { min-width:0; padding:17px; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); box-shadow:var(--shadow); }
-.card-head { display:flex; gap:10px; align-items:center; margin-bottom:12px; }
-.card>p { margin-top:10px; }
-.product { display:grid; gap:15px; }
-.sw { position:relative; min-height:240px; display:grid; place-items:center; overflow:hidden; border-radius:16px; padding:14px 14px 44px; background:#101010; border:1px solid var(--line); }
-.sw #swSvg { display:grid; place-items:center; width:100%; }
-.sw svg { width:46%; max-height:185px; }
-#swName { position:absolute; bottom:12px; padding:4px 11px; border-radius:999px; background:var(--plum); color:#000; font-size:13px; font-weight:750; }
-.catbar { display:grid; gap:8px; margin-bottom:12px; }
-.catalog { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; padding:3px; margin-bottom:14px; }
-.catchips { display:flex; gap:8px; overflow-x:auto; padding:2px 0 12px; }
-.catchips button { flex:none; padding:7px 14px; border:1px solid var(--line); border-radius:999px; background:transparent; color:var(--ink); font-size:13px; }
-.catchips button[aria-pressed=true] { background:var(--plum); color:#000; border-color:var(--plum); font-weight:700; }
-.cat-card { display:grid; grid-template-rows:auto auto auto auto; align-content:start; gap:3px; text-align:left; padding:8px; border:1px solid var(--line); border-radius:12px; background:#0d0d0d; color:var(--ink); transition:border-color var(--ease),box-shadow var(--ease); }
-.cat-card:hover { border-color:var(--plum); box-shadow:0 0 18px #39ff1426; }
-.cat-card[aria-pressed=true] { border:2px solid var(--plum); padding:7px; box-shadow:0 0 22px #39ff1440; }
-.cat-card .br { font-size:14px; font-weight:700; padding:0 2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.cat-card .nm { font-size:12px; padding:0 2px; color:var(--mu,#aaa); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.cat-card .pr { font-size:13px; font-weight:700; padding:2px 2px 0; }
-.cat-card .mu { font-size:12px; line-height:1.35; }
-.ct { aspect-ratio:3/4; display:grid; place-items:center; border-radius:8px; background:#fff; margin-bottom:6px; overflow:hidden; }
-.ct svg { width:60%; }
-.ct img { width:100%; height:100%; object-fit:cover; }
-.sw img { max-width:100%; max-height:240px; object-fit:contain; border-radius:8px; }
-.precise { margin-top:14px; padding:2px 14px 14px; border:1px solid var(--line); border-radius:14px; background:var(--ivory); }
-.precise>summary { margin:0 -14px; padding:0 14px; }
-.precise h3 { margin-top:16px; font-size:15px; }
-.why { list-style:none; padding:0; margin:12px 0 0; display:grid; gap:6px; }
-.why li { display:flex; justify-content:space-between; gap:10px; padding:7px 11px; border-radius:10px; background:var(--ivory); border:1px solid var(--line); font-size:13px; }
-.why b { color:var(--plum); }
-#prec { margin-top:8px; }
-#notes p { margin-top:8px; }
-#phThumb { width:90px; aspect-ratio:3/4; object-fit:cover; border-radius:10px; border:1px solid var(--plum); }
-#tryNeeds:empty { display:none; }
-#tryNeeds { margin-top:12px; }
-.product-meta { display:grid; gap:4px; }
-.fields { display:grid; gap:0 12px; }
-label,.field-label { display:block; color:var(--muted); font-size:13px; font-weight:650; margin:10px 0 4px; }
-select,input[type=number],input[type=password],input[type=search] { width:100%; min-height:44px; border:1px solid var(--control); border-radius:12px; padding:0 11px; background:var(--ivory); color:var(--ink); }
-input:disabled { opacity:.65; }
-.sr-only { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
-.chips,.thumbs { display:flex; flex-wrap:wrap; gap:5px; }
-.chips button { min-width:44px; min-height:44px; border:1px solid transparent; background:transparent; border-radius:50%; display:grid; place-items:center; }
-.chips button::after { content:""; width:26px; height:26px; border:1px solid var(--control); border-radius:50%; background:var(--chip); }
-.chips button[aria-pressed=true] { border:2px solid var(--plum); }
-summary { min-height:44px; display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:650; }
-summary::before { content:"+"; color:var(--plum); }
-details[open]>summary::before { content:"−"; }
-.btn,.copy { min-height:46px; border:1px solid transparent; border-radius:13px; padding:8px 13px; background:var(--plum); color:var(--on-plum); font-weight:750; line-height:1.25; transition:transform var(--ease),background var(--ease),color var(--ease); }
-.card .btn { width:100%; margin-top:12px; }
-.btn.s,.copy { color:var(--plum); background:var(--surface); border-color:var(--control); }
-.btn:hover:not(:disabled),.copy:hover { box-shadow:var(--shadow); }
-.btn:active:not(:disabled),.copy:active,.chips button:active,.stepper button:active { transform:scale(.97); }
-.btn:disabled { color:var(--muted); background:var(--sand); border-color:var(--line); }
-.result-size { margin-top:15px; padding:16px; background:var(--sand); border:1px solid var(--line); border-radius:16px; animation:arrive 220ms ease-out; }
-@keyframes arrive { from { opacity:0; transform:translateY(7px); } to { opacity:1; transform:translateY(0); } }
-.size { display:flex; align-items:center; justify-content:space-between; gap:12px; }
-.badge { font:650 64px/.95 var(--display); letter-spacing:-.06em; color:var(--plum); }
-.confidence { width:108px; display:grid; place-items:center; position:relative; text-align:center; flex:none; }
-.confidence svg { width:100%; grid-area:1/1; transform:rotate(-90deg); }
-.confidence circle { fill:none; stroke:var(--line); stroke-width:6; }
-.confidence #cb { stroke:var(--plum); stroke-linecap:round; stroke-dasharray:0 100; transition:stroke-dasharray 220ms ease-out; }
-.confidence b { grid-area:1/1; width:72px; color:var(--ink); font-size:13px; line-height:1.2; }
-#rs,#cmp,#sizeHint { margin-top:8px; }
-#cmp:empty { display:none; }
-.tog { position:relative; min-height:52px; padding:10px 12px; margin:10px 0; border:1px solid var(--line); border-radius:14px; background:var(--ivory); }
-.tog label { min-height:44px; margin:0; display:flex; flex-direction:column; justify-content:center; padding-right:56px; color:var(--ink); cursor:pointer; }
-.tog label .mu { margin-top:4px; font-weight:400; }
-.tog input { appearance:none; position:absolute; top:8px; right:6px; width:48px; height:44px; margin:0; cursor:pointer; }
-.tog input::before { content:""; display:block; width:42px; height:24px; margin:10px auto; background:var(--sand); border:1px solid var(--control); border-radius:999px; }
-.tog input::after { content:""; position:absolute; top:14px; left:7px; width:16px; height:16px; border-radius:50%; background:var(--control); transition:transform var(--ease); }
-.tog input:checked::before { background:var(--plum); border-color:var(--plum); }
-.tog input:checked::after { transform:translateX(18px); background:var(--on-plum); }
-.drop { display:grid; justify-items:center; text-align:center; gap:6px; padding:14px; margin:12px 0 5px; border:1px dashed var(--control); border-radius:16px; background:var(--sand); }
-.drop:focus-within,.drop[data-dragging] { outline:3px solid var(--focus); outline-offset:2px; }
-.drop label { color:var(--ink); margin:0; }
-.drop svg { width:50px; height:58px; color:var(--plum); }
-input[type=file] { max-width:100%; width:100%; min-width:0; min-height:44px; font-size:13px; color:var(--ink); }
-input::file-selector-button { min-height:44px; color:var(--plum); background:var(--surface); border:1px solid var(--control); border-radius:10px; font:650 13px var(--ui); margin-right:6px; }
-.thumbs button { padding:4px; border:1px solid var(--line); background:var(--ivory); color:var(--ink); border-radius:10px; max-width:90px; min-width:56px; font-size:13px; overflow-wrap:anywhere; }
-.thumbs button[aria-pressed=true] { border:2px solid var(--plum); }
-.thumbs img { display:block; width:100%; aspect-ratio:1; object-fit:cover; border-radius:6px; }
-#msg:not(:empty) { margin-top:12px; }
-.skeleton { height:120px; margin-top:12px; border-radius:15px; background:var(--sand); position:relative; overflow:hidden; }
-.skeleton::after { content:""; position:absolute; inset:0; background:var(--surface); opacity:.52; transform:translateX(-100%); animation:shimmer 1.35s ease-in-out infinite; }
-@keyframes shimmer { to { transform:translateX(100%); } }
-.preview { margin-top:12px; }
-.preview-image { position:relative; overflow:hidden; border-radius:16px; background:var(--sand); }
-canvas { display:block; width:100%; height:auto; }
-#originalLayer { position:absolute; inset:0 auto auto 0; width:100%; object-fit:contain; object-position:top; background:var(--sand); clip-path:inset(0 calc(100% - var(--compare)) 0 0); }
-.compare-labels { display:flex; justify-content:space-between; gap:10px; font-size:13px; color:var(--muted); }
-#compareRange { width:100%; height:44px; margin:0; accent-color:var(--plum); }
-.image-label { position:absolute; inset:8px 8px auto; width:fit-content; max-width:calc(100% - 16px); pointer-events:none; }
-.lab { color:var(--ink); background:var(--sand); border:1px solid var(--line); border-radius:10px; padding:6px 9px; margin-top:6px; font-size:13px; }
-.tag { display:inline-block; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:700; line-height:1.35; }
-.t1 { color:var(--rose); background:var(--rose-bg); }.t2 { color:var(--ochre); background:var(--amber-bg); }.t3 { color:var(--green); background:var(--green-bg); }
-.warn { border-left:4px solid var(--marigold); }
-.dock { position:fixed; z-index:5; inset:auto 0 0; display:flex; justify-content:center; gap:8px; padding:9px max(10px,env(safe-area-inset-right)) max(9px,env(safe-area-inset-bottom)); border-top:1px solid var(--line); background:var(--surface); box-shadow:var(--shadow); }
-.dock .btn { flex:1; max-width:320px; font-size:13px; }
-.toast { position:fixed; z-index:6; inset:auto 12px 78px; max-width:390px; margin-inline:auto; padding:12px; border:1px solid var(--control); border-radius:14px; color:var(--ink); background:var(--surface); box-shadow:var(--shadow); font-size:13px; }
-.summary { background:var(--sand); padding:10px 13px; border-radius:12px; margin-top:12px; font-weight:650; }
-.wrap { overflow:auto; max-height:430px; margin-top:12px; border:1px solid var(--line); border-radius:13px; }
-table { border-collapse:separate; border-spacing:0; width:100%; font-size:13px; }
-th,td { padding:8px 11px; border-bottom:1px solid var(--line); text-align:left; white-space:nowrap; }
-thead th { position:sticky; top:0; z-index:1; background:var(--sand); }
-tbody tr:last-child td { border-bottom:0; }
-tbody tr:hover { background:var(--ivory); }
-th button { min-height:44px; border:0; padding:0; background:none; color:var(--ink); font-weight:750; }
-.meter { display:block; height:6px; margin-top:4px; min-width:65px; background:var(--sand); border-radius:99px; }
-.meter i { display:block; height:100%; background:var(--plum); border-radius:99px; }
-.messages details { border-bottom:1px solid var(--line); padding:5px 0; }
-.messages details:last-child { border-bottom:0; }
-.messages .copy { margin:9px 0; }
-.kpis { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
-.kpi { padding:12px; }
-.kpi strong { display:block; color:var(--plum); font:650 clamp(17px,4vw,32px)/1.16 var(--display); }
-.target-grid { display:grid; gap:10px; margin-top:14px; }
-.target { padding:10px; border-radius:12px; background:var(--rose-bg); color:var(--rose); font-size:13px; font-weight:650; }
-.target progress { width:100%; height:10px; accent-color:var(--rose); }
-@media(min-width:600px) {
-  .catbar { grid-template-columns:1.5fr 1fr 1fr; }
-  .catalog { grid-template-columns:repeat(3,minmax(0,1fr)); }
-  main { padding:24px 24px 105px; }
-  .hero { padding:34px; }
-  .card { padding:22px; }
-  .fields,.target-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
-}
-@media(min-width:900px) {
-  .hero-mark { display:block; position:absolute; width:170px; right:8%; top:50%; transform:translateY(-50%); color:var(--plum); opacity:.37; }
-  nav { max-width:470px; }
-  .stepper { max-width:590px; }
-  .shop-grid { grid-template-columns:repeat(2,minmax(0,1fr)); grid-template-rows:auto 1fr auto; align-items:start; }
-  #pickStep { grid-column:1; grid-row:1; }
-  #sizeStep { grid-column:1; grid-row:2; }
-  #tryStep { grid-column:2; grid-row:1 / span 2; }
-  .shop-grid>.warn { grid-column:1/-1; }
-  .product { grid-template-columns:1fr 1fr; align-items:center; }
-  .kpis { grid-template-columns:repeat(4,minmax(0,1fr)); }
-  .dock { inset:auto 24px 20px auto; padding:7px; border:1px solid var(--line); border-radius:16px; }
-  #stickyAction { display:none; }
-}
-@media(prefers-reduced-motion:reduce) {
-  *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; scroll-behavior:auto!important; }
-}
-.camera-frame { position:relative; border-radius:14px; overflow:hidden; background:var(--sand); margin-top:12px; }
-.camera-frame video { display:block; width:100%; max-height:520px; object-fit:contain; }
-.camera-frame svg { position:absolute; inset:6% auto; left:50%; transform:translateX(-50%); height:88%; color:white; pointer-events:none; filter:drop-shadow(0 0 4px #000); }
-#sampleGallery { grid-column:1/-1; }
-#galleryItems img { display:block; max-width:100%; }
-#skuLookup,#customerLookup,#testLookup { width:100%; }
-</style></head><body><main>
-<header class="hero">
-  <span class="eyebrow">The kurta edit</span>
-  <h1>FitCheck</h1>
-  <p class="subtitle">Find your size. See it on you.</p>
-  <div class="trust" title="Deletion applies to FitCheck copies. See photo consent for model host retention.">
-    <span>Private by design</span><span aria-hidden="true">·</span><span>18+</span><span aria-hidden="true">·</span><span>FitCheck copies deleted within 24h</span>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f8f7f2">
+  <title>FitCheck | Find your fit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Instrument+Serif:ital@0;1&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/fitcheck.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="wordmark" href="/" aria-label="FitCheck home">FitCheck<span aria-hidden="true">.</span></a>
+    <nav class="main-nav" aria-label="Main navigation">
+      <button type="button" class="on" data-t="shop" aria-pressed="true">Shop</button>
+      <button type="button" data-t="size" aria-pressed="false">Size finder</button>
+    </nav>
+    <nav class="evidence-nav" aria-label="Evaluation">
+      <button type="button" data-t="fit" aria-pressed="false">Fit &amp; Returns</button>
+      <button type="button" data-t="res" aria-pressed="false">Results</button>
+    </nav>
   </div>
-  <div class="mu">Women’s kurtas · prototype built on the PS-13 synthetic data</div>
-  <svg class="hero-mark" viewBox="0 0 180 180" fill="none" stroke="currentColor" aria-hidden="true">
-    <circle cx="90" cy="90" r="74" stroke-dasharray="1 5" stroke-linecap="round"/>
-    <circle cx="90" cy="90" r="64"/>
-    <path d="M90 21Q110 60 139 41Q120 70 159 90Q120 110 139 139Q110 120 90 159Q70 120 41 139Q60 110 21 90Q60 70 41 41Q70 60 90 21Z"/>
-    <path d="M90 42Q101 79 138 90Q101 101 90 138Q79 101 42 90Q79 79 90 42Z"/>
-    <path d="M65 65Q90 75 115 65Q105 90 115 115Q90 105 65 115Q75 90 65 65Z"/>
-    <circle cx="90" cy="90" r="7"/>
-  </svg>
 </header>
-<nav aria-label="FitCheck views">
-  <button class="on" data-t="shop" aria-controls="shop" aria-pressed="true">Shop</button>
-  <button data-t="fit" aria-controls="fit" aria-pressed="false">Fit &amp; Returns</button>
-  <button data-t="res" aria-controls="res" aria-pressed="false">Results</button>
-</nav>
+<main id="main" tabindex="-1">
+  <section id="shop" aria-label="Shop">
+    <div class="hero">
+      <div class="hero-copy">
+        <h1>Find your fit.<br><em>See it on you.</em></h1>
+        <p>Check your size across brands or try a garment on with your own photo.</p>
+        <div class="hero-actions">
+          <a class="btn" href="#collection">Browse garments <span aria-hidden="true">↘</span></a>
+          <button type="button" class="text-button" id="heroDemo">Try a size demo <span aria-hidden="true">→</span></button>
+        </div>
+      </div>
+      <div class="hero-photos" aria-hidden="true">
+        <img src="/products/in-67b3ab82bb.jpg" alt="" fetchpriority="high">
+        <img src="/products/in-a6f53586f0.jpg" alt="">
+      </div>
+    </div>
 
-<section id="shop" aria-label="Shop">
- <ol class="stepper" aria-label="Shopping steps">
-   <li><button type="button" data-step="0" aria-current="step"><b>1</b> Pick a garment</button></li>
-   <li><button type="button" data-step="1"><b>2</b> Find my size</button></li>
-   <li><button type="button" data-step="2"><b>3</b> See it on me</button></li>
- </ol>
- <div class="shop-grid">
- <article class="card" id="pickStep" tabindex="-1">
- <div class="card-head"><span class="step-index" aria-hidden="true">1</span><h2>Pick a garment</h2></div>
- <div id="catChips" class="catchips" role="group" aria-label="Clothing category"></div>
- <div class="catbar">
-   <div><label class="sr-only" for="cs">Search garments</label><input id="cs" type="search" placeholder="Search saree, kurta, shirt, brand…"></div>
-   <div><label class="sr-only" for="cbrand">Brand</label><select id="cbrand"></select></div>
-   <div><label class="sr-only" for="csort">Sort</label><select id="csort"><option value="">Featured</option><option value="lo">Price: low to high</option><option value="hi">Price: high to low</option></select></div>
+    <section id="collection" class="collection" aria-labelledby="collectionTitle">
+      <div class="collection-head">
+        <div><h2 id="collectionTitle" tabindex="-1">The collection</h2><p class="mu">Sample garments for virtual try-on.</p></div>
+        <div class="search-control"><label class="sr-only" for="cs">Search garments</label><input id="cs" type="search" placeholder="Search garments"></div>
+      </div>
+      <div class="catalog-toolbar">
+        <div id="catChips" class="catchips" role="group" aria-label="Clothing category"></div>
+        <details class="filters" id="catalogFilters">
+          <summary>Filters<span aria-hidden="true"> +</span></summary>
+          <div class="filter-popover">
+            <label for="cbrand">Brand</label><select id="cbrand"><option value="">All brands</option></select>
+            <label for="csort">Sort by</label><select id="csort"><option value="">Featured</option><option value="lo">Price: low to high</option><option value="hi">Price: high to low</option></select>
+          </div>
+        </details>
+      </div>
+      <p id="catNote" class="mu catalog-note" role="status">Loading garments…</p>
+      <div id="catalog" class="catalog" role="group" aria-label="Clothing catalogue"></div>
+      <div id="catEmpty" class="empty-state hid"><h3>No matching garments</h3><p class="mu">Try another search or clear your filters.</p><button id="clearFilters" class="text-button" type="button">Clear filters</button></div>
+      <div class="catalog-bottom"><button id="catalogMore" class="btn s hid" type="button">Show more garments</button></div>
+    </section>
+  </section>
+
+  <section id="workspace" class="hid" aria-label="Size and try-on">
+    <button type="button" id="backToShop" class="text-button back-button"><span aria-hidden="true">←</span> Back to collection</button>
+    <div class="workspace-grid">
+      <figure class="product-image hid" id="pickedImage"><div id="swSvg"></div><figcaption id="swName"></figcaption></figure>
+      <div class="workspace-content">
+        <div class="product-meta hid" id="productMeta">
+          <p id="productBrand" class="product-brand"></p>
+          <h1 id="pn" tabindex="-1"></h1>
+          <p id="pmeta" class="mu"></p>
+          <div id="productColours" class="hid"><span class="field-label" id="colourLabel">Colour</span><div id="colourChips" class="chips" role="group" aria-labelledby="colourLabel"></div></div>
+          <div class="workspace-actions">
+            <button type="button" class="btn" id="showTryOn" aria-controls="tryStep">See it on me</button>
+            <button type="button" class="btn s" id="showSize" aria-controls="sizeStep">Find my size</button>
+          </div>
+          <p id="sampleFitNotice" class="mu hid">This photo sample has no size data.</p>
+        </div>
+ <article class="tool-panel hid" id="sizeStep" tabindex="-1">
+ <div class="panel-head"><h2>Find my size</h2><p class="mu" id="sizeIntro">Use a catalogue SKU or try a sample case.</p></div>
+ <div class="fit-picker" id="fitPicker">
+   <div class="fields">
+     <div><label for="fitCategory">Clothing category</label><select id="fitCategory"><option value="">All categories</option></select></div>
+     <div><label for="fitSearch">Search garments by name or brand</label><input id="fitSearch" type="search" placeholder="e.g. straight kurta"></div>
+   </div>
+   <p id="fitSearchState" class="mu" role="status"></p>
+   <ul id="fitMatches" class="fit-matches" aria-label="Matching garments"></ul>
+   <p id="fitChoice" class="fit-choice hid" role="status"></p>
  </div>
- <div id="catalog" class="catalog" role="group" aria-label="Clothing catalogue"></div>
- <button id="catalogMore" class="btn s hid" type="button">Show more</button>
- <p id="catNote" class="mu"></p>
- <p id="catEmpty" class="mu hid">Nothing matches. Try another category, search or brand.</p>
- <div class="product picked"><div class="sw" id="sw"><div id="swSvg"></div><span id="swName">Kurta</span></div>
- <div class="product-meta"><span class="eyebrow">Selected</span><h3 id="pn"></h3><p class="mu" id="pmeta"></p>
- <span class="field-label" id="colourLabel">Colour</span><div id="colourChips" class="chips" role="group" aria-labelledby="colourLabel"></div>
- <select id="tb" hidden></select><select id="ft" hidden><option>Regular</option><option>Slim</option><option>Relaxed</option></select></div></div></article>
+ <div class="demo-tools"><button type="button" id="trySampleCase" class="text-button">Try a size demo <span aria-hidden="true">→</span></button>
+ <details id="testDetails"><summary>Look up a test case</summary><label for="testLookup">Test ID</label>
+ <div class="lookup-row"><input id="testLookup" type="search" placeholder="FT-10026"><button id="lookupCase" type="button" class="btn s">Look up test case</button></div></details></div>
+ <div id="out" class="result-size hid" tabindex="-1" aria-live="polite">
+   <div class="size">
+     <div><span class="eyebrow">Recommended size</span><div class="badge" id="sz">M</div></div>
+     <div class="confidence"><b id="cf"></b></div>
+   </div>
+   <div class="mu" id="rs"></div><div class="tag t2 hid" id="sizeHint"></div>
+   <details id="confidenceDetails"><summary>What does confidence mean?</summary><p class="mu" id="prec"></p><p class="mu" id="technicalTiming"></p></details>
 
- <article class="card" id="sizeStep" tabindex="-1">
- <div class="card-head"><span class="step-index" aria-hidden="true">2</span><div><h2>Find my size</h2><span class="mu">(2 quick questions, or add more for higher precision)</span></div></div>
- <details><summary>Look up a test case</summary><label for="testLookup">Test ID</label>
- <input id="testLookup" type="search" placeholder="FT-10022"><button id="lookupCase" class="btn s">Look up test case</button></details>
- <div class="fields"><div><label for="skuLookup">Product SKU</label><input id="skuLookup" type="search" placeholder="TL-102361"></div>
- <div><label for="customerLookup">Synthetic customer ID (optional)</label><input id="customerLookup" type="search" placeholder="C-500253"></div></div>
- <div class="fields"><div><label for="us">1. Your usual size</label><select id="us"><option value="">Not sure</option><option>XS</option><option>S</option><option selected>M</option><option>L</option><option>XL</option><option>XXL</option><option>3XL</option></select>
- </div><div><label for="ub">…in which brand? (helps a lot)</label><select id="ub"></select>
- </div><div><label for="fp">2. How do you like your clothes to fit?</label><select id="fp"><option value="-0.3">Snug</option><option value="0" selected>Regular</option><option value="0.3">Roomy</option></select>
+   <div id="notes"></div>
+   <div class="mu" id="cmp"></div>
+ </div>
+ <details id="skuField"><summary>Enter a product SKU</summary><div class="fields"><div><label for="skuLookup">Product SKU</label><input id="skuLookup" type="search" placeholder="TL-102361"></div>
+ <div><label for="customerLookup">Demo customer ID (optional)</label><input id="customerLookup" type="search" placeholder="C-500253"></div></div></details>
+ <div class="fields"><div><label for="us">Usual size</label><select id="us"><option value="">Not sure</option><option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option><option>XXL</option><option>3XL</option></select>
+ </div><div><label for="ub">Usual brand (optional)</label><select id="ub"><option value="">Not sure / other brand</option></select>
+ </div><div><label for="fp">How do you like it to fit?</label><select id="fp"><option value="-0.3">Snug</option><option value="0" selected>Regular</option><option value="0.3">Roomy</option></select>
  </div></div>
- <details class="precise" id="precise"><summary>Get a more precise fit <span class="tag t3">optional</span></summary>
+ <details class="precise" id="precise"><summary>Add measurements (optional)</summary>
    <p class="mu">Used only to recommend your size. With your consent, FitCheck processes these measurements for this request and clears them from this tab when you delete them.</p>
    <h3>Your measurements</h3>
    <div class="tog"><input type="checkbox" role="switch" id="c2"><label for="c2">I agree to use my body measurements for size advice in this tab.</label></div>
@@ -265,46 +121,29 @@ th button { min-height:44px; border:0; padding:0; background:none; color:var(--i
      <div><label for="hi">Hip, cm</label><input id="hi" type="number" inputmode="decimal" min="60" max="160" placeholder="e.g. 98"></div>
    </div>
    <details><summary class="mu">How to measure</summary>
-     <p class="mu"><b>Bust:</b> around the fullest part of your chest, tape level across your back. <b>Waist:</b> around the narrowest part of your torso. <b>Hip:</b> around the fullest part of your hips. Keep the tape snug but not tight, and measure over thin clothing. Kurtas are sized to clear your fullest measurement, so hip and bust matter most.</p>
+     <p class="mu"><b>Bust:</b> around the fullest part of your chest, tape level across your back. <b>Waist:</b> around the narrowest part of your torso. <b>Hip:</b> around the fullest part of your hips. Keep the tape snug but not tight, and measure over thin clothing.</p>
    </details>
  </details>
  <p id="recommendStatus" class="mu" role="status"></p><button class="btn" id="go">Recommend my size</button>
- <div id="out" class="result-size hid" aria-live="polite">
-   <div class="size">
-     <div><span class="eyebrow">Recommended size</span><div class="badge" id="sz">M</div></div>
-     <div class="confidence">
-       <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44"/><circle id="cb" cx="50" cy="50" r="44" pathLength="100"/></svg>
-       <b id="cf"></b>
-     </div>
-   </div>
-   <div class="mu" id="rs"></div><div class="tag t2 hid" id="sizeHint"></div>
-   <div class="mu" id="prec"></div>
-   <ul class="why" id="why" aria-label="What each input suggests"></ul>
-   <div id="notes"></div>
-   <div class="mu" id="cmp"></div>
- </div></article>
+</article>
 
- <article class="card" id="tryStep" tabindex="-1">
- <div class="card-head"><span class="step-index" aria-hidden="true">3</span><div><h2>See it on me</h2><span class="tag t2">Simulated preview</span></div></div>
- <p class="mu">Photo is optional and never needed to shop. Each consent is a separate choice.</p>
- <p id="tryOn" class="lab"></p>
- <div class="tog"><input type="checkbox" role="switch" id="c1"><label for="c1">I agree to send my photo for this preview. <span class="mu" id="photoPrivacy">FitCheck checks the photo and clears its copies when I delete them or within 24 hours.</span></label></div>
- <label for="ag">Age (photo try-on is for 18+)</label><input id="ag" type="number" inputmode="numeric" min="5" max="99" placeholder="e.g. 27">
+ <article class="tool-panel hid" id="tryStep" tabindex="-1">
+ <div class="panel-head"><h2>See it on me</h2><p class="mu">Create a simulated preview with your photo. For adults 18+.</p></div>
+ <div class="tog"><input type="checkbox" role="switch" id="c1" disabled><label for="c1">I agree to send my photo for this preview. <span class="mu" id="photoPrivacy">FitCheck checks the photo and clears its copies when I delete them or within 24 hours.</span></label></div>
+ <label for="ag">Your age</label><input id="ag" type="number" inputmode="numeric" min="5" max="99" placeholder="e.g. 27">
  <div class="drop" id="photoDrop">
- <svg viewBox="0 0 58 70" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 14V4h10m32 0h10v10M3 56v10h10m32 0h10V56"/><circle cx="29" cy="14" r="6"/><path d="M24 24h10l8 18-5 2-4-9 2 24h-5l-1-14-1 14h-5l2-24-4 9-5-2Z"/></svg>
- <label for="ph">Full-body photo, head to feet, one person, good light</label><input id="ph" type="file" accept="image/jpeg,image/png,image/webp"><img id="phThumb" class="hid" alt="Your chosen photo"><span class="mu">Drop a photo here or choose a file.</span></div>
+ <label for="ph">Your photo</label><p id="photoGuide" class="mu">Use a clear photo of one person in good light.</p><input id="ph" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="photoGuide"><img id="phThumb" class="hid" alt="Your chosen photo"></div>
  <button id="cameraStart" class="btn s" type="button">Open camera</button>
  <div id="cameraPanel" class="hid">
    <div class="camera-frame"><video id="cameraVideo" playsinline muted autoplay></video><svg viewBox="0 0 58 70" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 14V4h10m32 0h10v10M3 56v10h10m32 0h10V56"/><circle cx="29" cy="14" r="6"/><path d="M24 24h10l8 18-5 2-4-9 2 24h-5l-1-14-1 14h-5l2-24-4 9-5-2Z"/></svg></div>
-   <p class="mu">Frame your whole head and both feet. Use a plain background and even light from the front.</p>
+   <p class="mu" id="cameraGuide">Use a plain background and even light from the front.</p>
    <button id="capture" class="btn" type="button">Capture photo</button>
    <button id="cameraClose" class="btn s" type="button">Close camera</button>
  </div>
- <details><summary>Use my own kurta image instead</summary><label for="gf">Kurta image (JPG, PNG or WebP)</label><input id="gf" type="file" accept="image/jpeg,image/png,image/webp">
- <p class="mu">After adding your photo, you can drop the garment image onto the photo to start.</p></details>
+ <details id="garmentDetails"><summary>Use a different garment photo</summary><label for="gf">Garment photo (JPG, PNG or WebP)</label><input id="gf" type="file" accept="image/jpeg,image/png,image/webp"><p class="mu">Use a photo of the garment on its own.</p></details>
  <p id="tryNeeds" class="mu" role="status"></p>
  <div id="msg" class="mu" role="status"></div>
- <button class="btn" id="rn" disabled>See it on me</button>
+ <div class="preview-actions"><button class="btn" id="rn" disabled>Generate preview</button><button class="text-button hid" id="clearTryData" type="button">Clear photo and data</button></div>
  <div id="renderProgress" class="hid"><div class="skeleton" aria-hidden="true"></div><p id="renderStage" class="mu" aria-hidden="true"></p></div>
  <div id="preview" class="preview hid">
    <div id="previewImage" class="preview-image">
@@ -318,721 +157,29 @@ th button { min-height:44px; border:0; padding:0; background:none; color:var(--i
      <input id="compareRange" type="range" min="0" max="100" value="50">
      <div class="compare-labels" aria-hidden="true"><span>More preview</span><span>More original</span></div>
    </div>
-   <p class="mu hid" id="note">Size advice is shown separately above. This image is not evidence of size.</p>
+   <p class="mu hid" id="note">Use the size finder for sizing advice.</p>
  </div></article>
- <details id="sampleGallery" class="card"><summary>Sample gallery</summary><p class="mu" id="galleryStatus" role="status">Loading samples…</p><div id="galleryItems" class="catalog"></div></details>
- <div class="card warn mu">Photo checks run before any model call. If the live model is unavailable, use the sample gallery. Size advice stays separate.</div>
-</div></section>
+ <details id="sampleGallery" class="gallery hid"><summary>Sample gallery</summary><p class="mu" id="galleryStatus" role="status">Loading samples…</p><div id="galleryItems" class="catalog"></div></details>
+      </div>
+    </div>
+  </section>
 
-<section id="fit" class="hid">
+<section id="fit" class="evidence hid" aria-label="Fit and Returns">
  <div class="card"><h2>Kurta brands by size-return rate</h2><p class="mu">Jan–Sep 2026 training sample. Direction comes from the learned size offset. Chart gap compares kept sizes with published charts on consented orders. The flag uses the chart gap and conflicting return evidence.</p>
  <div id="fitSummary" class="summary"></div><div class="wrap" tabindex="0" role="region" aria-label="Kurta brand data, scrollable table"><table id="bt"></table></div></div>
  <div class="card"><h2>Draft messages to brands</h2><p class="mu">Aggregated evidence only. No individual data is shared.</p><div id="ms" class="messages"></div></div>
 </section>
 
-<section id="res" class="hid"><div id="rb"></div></section>
+<section id="res" class="evidence hid" aria-label="Results"><div id="rb"></div></section>
 </main>
-<div class="dock" role="group" aria-label="Shopping and photo actions">
-  <button class="btn" type="button" id="stickyAction">Find my size</button>
-  <button class="btn s" id="del">Delete my photo and data</button>
-</div>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <span class="footer-brand">FitCheck</span>
+    <p class="mu">A prototype built on synthetic PS-13 fit data.</p>
+    <button class="text-button" type="button" id="del">Delete my photo and data</button>
+  </div>
+</footer>
 <div class="toast hid" id="toast" role="status"></div>
-<script>
-const $ = id => document.getElementById(id);
-let brands = [];
-const steps = ['pickStep', 'sizeStep', 'tryStep'];
-let currentStep = 0;
-let activeView = 'shop';
-
-function updateDock() {
-  const primary = $('stickyAction');
-  primary.classList.toggle('hid', activeView !== 'shop');
-  const sizeReady = !$('out').classList.contains('hid');
-  primary.textContent = ['Find my size', sizeReady ? 'See it on me' : 'Recommend my size', 'See it on me'][currentStep];
-  primary.disabled = currentStep === 2 && $('rn').disabled;
-}
-function setStep(index, navigate = false) {
-  currentStep = index;
-  document.querySelectorAll('[data-step]').forEach(button => {
-    if (Number(button.dataset.step) === index) button.setAttribute('aria-current', 'step');
-    else button.removeAttribute('aria-current');
-  });
-  if (navigate) {
-    $(steps[index]).scrollIntoView({block: 'start'});
-    $(steps[index]).focus({preventScroll: true});
-  }
-  updateDock();
-}
-steps.forEach((id, index) => $(id).addEventListener('focusin', () => setStep(index)));
-document.querySelectorAll('[data-step]').forEach(button => {
-  button.onclick = () => setStep(Number(button.dataset.step), true);
-});
-$('stickyAction').onclick = () => {
-  if (currentStep === 0) setStep(1, true);
-  else if (currentStep === 1 && $('out').classList.contains('hid')) $('go').click();
-  else if (currentStep === 1) setStep(2, true);
-  else $('rn').click();
-};
-document.querySelectorAll('nav button').forEach(button => {
-  button.onclick = () => {
-    activeView = button.dataset.t;
-    document.querySelectorAll('nav button').forEach(tab => {
-      tab.classList.toggle('on', tab === button);
-      tab.setAttribute('aria-pressed', String(tab === button));
-    });
-    if (activeView !== 'shop') stopCamera();
-    ['shop','fit','res'].forEach(view => $(view).classList.toggle('hid', view !== activeView));
-    updateDock();
-  };
-});
-// ---------- catalog ----------
-let CAT = [];
-let visibleProducts = 12, catFilter = 'T-Shirts';
-const KP = {
-  straight: ['M37 13 22 18 6 54l16 8 8-16-3 84h46l-3-84 8 16 16-8-16-36-15-5c-3 8-8 12-13 12s-10-4-13-12Z', 'M29 123h42'],
-  aline: ['M37 13 22 18 6 54l16 8 8-16-10 84h60l-10-84 8 16 16-8-16-36-15-5c-3 8-8 12-13 12s-10-4-13-12Z', 'M23 123h54']
-};
-function kurtaSvg(hex, shape, flat) {
-  const [outline, hem] = KP[shape];
-  const edge = flat ? 'rgba(0,0,0,.4)' : 'rgba(255,255,255,.45)';
-  const head = flat ? ' xmlns="http://www.w3.org/2000/svg" width="500" height="725"' : ' aria-hidden="true"';
-  return `<svg${head} viewBox="0 0 100 145">${flat ? '<rect width="100" height="145" fill="#f2f2f2"/>' : ''}` +
-    `<path d="${outline}" fill="${hex}" stroke="${edge}" stroke-width="1.1" stroke-linejoin="round"/>` +
-    `<path d="M50 25v38M44 80h12${hem}" fill="none" stroke="${edge}" stroke-width="1" stroke-linecap="round"/></svg>`;
-}
-const money = (n, c) => n == null ? 'Price n/a' : (c === 'USD' ? '$' : '₹') + Number(n).toLocaleString(c === 'USD' ? 'en-US' : 'en-IN');
-const cur = {p: null, c: 0};
-function renderCatalog() {
-  const q = $('cs').value.trim().toLowerCase(), br = $('cbrand').value, so = $('csort').value;
-  const list = CAT.filter(p => (!br || p.brand === br) && (!catFilter || p.cat === catFilter) &&
-    (!q || (p.brand + ' ' + p.name + ' ' + p.cols.map(c => c.name).join(' ')).toLowerCase().includes(q)));
-  if (so === 'lo') list.sort((a, b) => (a.price ?? 1e9) - (b.price ?? 1e9));
-  if (so === 'hi') list.sort((a, b) => (b.price ?? -1) - (a.price ?? -1));
-  $('catalogMore').classList.toggle('hid', list.length <= visibleProducts);
-  $('catalog').replaceChildren(...list.slice(0, visibleProducts).map(p => {
-    const card = document.createElement('button');
-    card.type = 'button';
-    card.className = 'cat-card';
-    card.setAttribute('aria-pressed', String(p.id === cur.p?.id));
-    const tile = document.createElement('div');
-    tile.className = 'ct';
-    if (p.cols[0].image) {
-      const img = document.createElement('img');
-      img.src = p.cols[0].image; img.alt = ''; img.loading = 'lazy';
-      tile.append(img);
-    } else tile.innerHTML = kurtaSvg(p.cols[0].hex, p.shape);
-    const brand = document.createElement('span'), name = document.createElement('span'), price = document.createElement('span');
-    brand.className = 'br'; name.className = 'nm'; price.className = 'pr';
-    brand.textContent = p.brand;
-    name.textContent = p.name;
-    name.title = p.name;
-    price.textContent = money(p.price, p.currency);
-    card.append(tile, brand, name, price);
-    card.dataset.id = p.id;
-    card.onclick = () => selectProduct(p);
-    return card;
-  }));
-  $('catEmpty').classList.toggle('hid', list.length > 0);
-}
-function renderPicked() {
-  const {p, c} = cur, v = p.cols[c], cn = v.name, hex = v.hex;
-  if (v.image) {
-    const img = document.createElement('img');
-    img.src = v.image; img.alt = `${p.brand} ${p.name} in ${cn}`;
-    $('swSvg').replaceChildren(img);
-  } else $('swSvg').innerHTML = kurtaSvg(hex, p.shape);
-  $('swName').textContent = cn;
-  $('pn').textContent = p.name;
-  $('pmeta').textContent = `${p.brand} · ${money(p.price, p.currency)} · ${p.fit} fit` + (v.sku ? ` · SKU ${v.sku}` : '');
-  $('tryOn').textContent = `Trying on: ${cn} ${p.name} · ${p.brand}`;
-  $('colourChips').replaceChildren(...p.cols.map(({name, hex: value}, i) => {
-    const chip = document.createElement('button');
-    chip.type = 'button';
-    chip.style.setProperty('--chip', value);
-    chip.setAttribute('aria-label', name);
-    chip.setAttribute('aria-pressed', String(i === c));
-    chip.title = name;
-    chip.onclick = () => { cur.c = i; renderPicked(); clearPreview(); sync(); };
-    return chip;
-  }));
-}
-function selectProduct(p, initial) {
-  cur.p = p; cur.c = 0;
-  $('skuLookup').value = p.id;
-  $('us').replaceChildren(new Option('Not sure',''), ...letterSizes.map(size => new Option(size)));
-  $('tb').value = p.brand;
-  $('ft').value = p.fit;
-  $('gf').value = '';
-  renderPicked();
-  document.querySelectorAll('.cat-card').forEach(card => {
-    card.setAttribute('aria-pressed', String(card.dataset.id === p.id));
-  });
-  if (initial) return; // later `let` state is not initialised yet
-  clearPreview();
-  if (!$('out').classList.contains('hid')) rec();
-  sync();
-}
-['cs', 'cbrand', 'csort'].forEach(id => { $(id).oninput = () => { visibleProducts = 12; renderCatalog(); }; });
-$('catalogMore').onclick = () => { visibleProducts += 12; renderCatalog(); };
-const letterSizes = ['XS','S','M','L','XL','XXL','3XL'];
-const jeansSizes = ['24','26','28','30','32','34','36','38','40','42'];
-fetch('/api/catalog').then(response => {
-  if (!response.ok) throw new Error();
-  return response.json();
-}).then(items => {
-  CAT = items.map(item => ({id:item.sku_id, brand:item.brand, name:item.name, price:item.price,
-    fit:item.fit, shape:'straight', cat:item.category_label, currency:item.currency, gcat:item.garment_category, free:!!item.free, cols:item.variants.map(v => ({name:v.colour, hex:v.hex, image:v.image, sku:v.sku}))}));
-  const available = [...new Set(CAT.map(item => item.brand))].sort();
-  for (const id of ['cbrand','ub']) $(id).replaceChildren(new Option(id === 'ub' ? 'Not sure / other brand' : 'All brands',''), ...available.map(brand => new Option(brand)));
-  $('catNote').textContent = 'Sample catalogue from the Indo Fashion dataset, DummyJSON and Fake Store. Prices where available are in USD. Size advice covers the synthetic kurta SKUs only.';
-  const cats = [...new Set(CAT.map(item => item.cat).filter(Boolean))].sort((a, b) => (b === 'T-Shirts') - (a === 'T-Shirts') || a.localeCompare(b));
-  if (!cats.includes(catFilter)) catFilter = '';
-  $('catChips').replaceChildren(...['', ...cats].map(name => {
-    const chip = document.createElement('button');
-    chip.type = 'button';
-    chip.textContent = name || 'All';
-    chip.setAttribute('aria-pressed', String(name === catFilter));
-    chip.onclick = () => {
-      catFilter = name; visibleProducts = 12;
-      $('catChips').querySelectorAll('button').forEach(c => c.setAttribute('aria-pressed', String(c === chip)));
-      renderCatalog();
-    };
-    return chip;
-  }));
-  selectProduct(CAT.find(item => !catFilter || item.cat === catFilter) || CAT[0]);
-  renderCatalog();
-}).catch(() => {
-  $('catNote').textContent = 'The catalogue could not load. You can still enter a SKU or test case below.';
-});
-$('skuLookup').onchange = () => {
-  $('us').replaceChildren(new Option('Not sure',''), ...[...letterSizes,...jeansSizes].map(size => new Option(size)));
-};
-let recommendRequest = 0;
-async function rec(lookup = false) {
-  const serial = ++recommendRequest;
-  const started = performance.now();
-  const data = {};
-  if (lookup) data.test_id = $('testLookup').value.trim().toUpperCase();
-  else {
-    data.sku_id = $('skuLookup').value.trim().toUpperCase();
-    data.customer_id = $('customerLookup').value.trim().toUpperCase() || null;
-    data.usual_size = $('us').value || null;
-    data.usual_brand = $('ub').value || null;
-    data.fit_preference = Number($('fp').value);
-    data.consent_measurements = $('c2').checked;
-    if (data.consent_measurements) {
-      for (const [id, key] of [['bu','bust'], ['wa','waist'], ['hi','hip']]) {
-        if ($(id).value) data[key] = Number($(id).value);
-      }
-    }
-  }
-  if (lookup && !data.test_id) {
-    $('recommendStatus').textContent = 'Enter a test ID, for example FT-10022.';
-    return;
-  }
-  $('out').classList.add('hid');
-  updateDock();
-  $('recommendStatus').textContent = 'Checking fit evidence…';
-  try {
-    const response = await fetch('/api/recommend', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
-    const result = await response.json();
-    if (serial !== recommendRequest) return;
-    if (!response.ok) {
-      $('recommendStatus').textContent = result.error || 'Check your entries and try again.';
-      return;
-    }
-    $('sz').textContent = result.size;
-    $('cf').textContent = result.confidence === null ? 'Uncalibrated' : `${(result.confidence*100).toFixed(1)}% confidence`;
-    $('cb').style.strokeDasharray = `${(result.confidence || 0)*100} 100`;
-    $('rs').textContent = result.reason;
-    $('prec').textContent = result.confidence === null ? '' : `Late September calibration, n=${result.calibration_n.toLocaleString()}.`;
-    $('sizeHint').textContent = 'Between available sizes';
-    $('sizeHint').classList.toggle('hid', !result.between_sizes);
-    $('cmp').textContent = `${result.brand} · ${result.category} · ${result.sku_id}`;
-    $('notes').textContent = result.chart_unreliable ? 'Published chart flagged as unreliable in Fit & Returns.' : '';
-    const serverMs = response.headers.get('Server-Timing')?.match(/recommend;dur=([\d.]+)/)?.[1];
-    const elapsed = Math.round(performance.now()-started);
-    $('recommendStatus').textContent = serverMs
-      ? `${elapsed} ms end to end · ${Number(serverMs).toFixed(2)} ms server compute.`
-      : `${elapsed} ms end to end.`;
-    $('out').classList.remove('hid');
-    if (lookup && result.needs_input) {
-      $('skuLookup').value = result.sku_id;
-    $('recommendStatus').textContent += ' Add your usual size and fit preference to refine it.';
-    }
-    updateDock();
-  } catch {
-    if (serial === recommendRequest) $('recommendStatus').textContent = 'Could not reach the fit service. Try again.';
-  }
-}
-$('go').onclick = () => rec();
-$('lookupCase').onclick = () => rec(true);
-// consent + photo
-let SID = crypto.randomUUID();
-let pendingRender = null, deleting = false, generation = 0, expiry = 0, photoExpiry = 0;
-let photoConfigLoaded = false, remoteBackend = null;
-let toastTimer, progressTimer;
-let originalUrl;
-const stages = ['Checking your photo…', 'Fitting the kurta…', 'Finishing touches…'];
-
-function toast(message) {
-  clearTimeout(toastTimer);
-  $('toast').textContent = message;
-  $('toast').classList.remove('hid');
-  toastTimer = setTimeout(() => $('toast').classList.add('hid'), 5000);
-}
-function renderProgress(active) {
-  clearInterval(progressTimer);
-  $('renderProgress').classList.toggle('hid', !active);
-  $('rn').setAttribute('aria-busy', String(active));
-  if (!active) return;
-  let step = 0;
-  $('renderStage').textContent = stages[step];
-  progressTimer = setInterval(() => {
-    step = Math.min(step + 1, stages.length - 1);
-    $('renderStage').textContent = stages[step];
-  }, 4500);
-}
-function resetComparison() {
-  if (originalUrl) URL.revokeObjectURL(originalUrl);
-  originalUrl = null;
-  $('originalLayer').removeAttribute('src');
-  $('originalLayer').classList.add('hid');
-  $('compareControls').classList.add('hid');
-}
-$('compareRange').oninput = () => {
-  const value = $('compareRange').value;
-  $('previewImage').style.setProperty('--compare', value + '%');
-  $('compareRange').setAttribute('aria-valuetext', value + '% original photo');
-};
-function showComparison(file, requestGeneration) {
-  const original = $('originalLayer');
-  originalUrl = URL.createObjectURL(file);
-  original.src = originalUrl;
-  original.decode().then(() => {
-    if (generation !== requestGeneration) return;
-    const canvas = $('cv');
-    const originalHeight = canvas.width * original.naturalHeight / original.naturalWidth;
-    original.style.height = Math.min(100, originalHeight / canvas.height * 100) + '%';
-    $('compareRange').value = 50;
-    $('compareRange').oninput();
-    original.classList.remove('hid');
-    $('compareControls').classList.remove('hid');
-  }).catch(() => {
-    if (generation === requestGeneration) resetComparison();
-  });
-}
-let cameraStream;
-let cameraRequest = 0;
-function stopCamera() {
-  cameraRequest++;
-  if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
-  cameraStream = null;
-  $('cameraVideo').srcObject = null;
-  $('cameraPanel').classList.add('hid');
-}
-$('cameraStart').onclick = async () => {
-  if ($('cameraStart').disabled) return;
-  stopCamera();
-  const opening = cameraRequest;
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1080},height:{ideal:1920}},audio:false});
-    if (opening !== cameraRequest || $('cameraStart').disabled) {
-      stream.getTracks().forEach(track => track.stop());
-      return;
-    }
-    cameraStream = stream;
-    $('cameraVideo').srcObject = stream;
-    $('cameraPanel').classList.remove('hid');
-  } catch {
-    $('msg').textContent = 'Camera access is unavailable. You can upload a photo instead.';
-  }
-};
-$('cameraClose').onclick = stopCamera;
-window.addEventListener('pagehide', stopCamera);
-$('capture').onclick = () => {
-  const video = $('cameraVideo');
-  if (!cameraStream || !video.videoWidth) return;
-  const captureRequest = cameraRequest;
-  const frame = document.createElement('canvas');
-  frame.width = video.videoWidth;
-  frame.height = video.videoHeight;
-  frame.getContext('2d').drawImage(video,0,0);
-  frame.toBlob(blob => {
-    if (!blob || captureRequest !== cameraRequest || $('cameraStart').disabled) return;
-    const files = new DataTransfer();
-    files.items.add(new File([blob], 'capture.jpg', {type:'image/jpeg'}));
-    $('ph').files = files.files;
-    $('ph').dispatchEvent(new Event('change',{bubbles:true}));
-    stopCamera();
-  },'image/jpeg',.9);
-};
-async function checkClientPhoto(file) {
-  if (file.size > 12 * 1024 * 1024) return 'Choose a photo under 12 MB.';
-  try {
-    const image = await createImageBitmap(file);
-    try {
-      if (Math.min(image.width,image.height) < 480) return 'Retake at a higher resolution (at least 480 pixels on the short side).';
-      if (image.height < image.width) return 'Retake in portrait orientation with your head and feet visible.';
-      const frame = document.createElement('canvas');
-      frame.width = frame.height = 40;
-      const ctx = frame.getContext('2d');
-      ctx.drawImage(image,0,0,40,40);
-      const rgba = ctx.getImageData(0,0,40,40).data;
-      const light = [];
-      for (let i=0; i<rgba.length; i+=4) light.push(.299*rgba[i] + .587*rgba[i+1] + .114*rgba[i+2]);
-      light.sort((a,b) => a-b);
-      if (light[1200] < 48 || light[1440] - light[160] < 16) return 'Retake in even light from the front.';
-    } finally { image.close(); }
-  } catch {
-    return 'Choose a readable JPG, PNG or WebP photo.';
-  }
-  return '';
-}
-fetch('/api/gallery').then(response => {
-  if (!response.ok) throw new Error();
-  return response.json();
-}).then(entries => {
-  $('galleryStatus').textContent = entries.length ? '' : 'No approved evaluation renders are available yet.';
-  for (const entry of entries) {
-    const figure = document.createElement('figure');
-    const img = document.createElement('img');
-    img.src = entry.image;
-    img.alt = entry.label;
-    img.loading = 'lazy';
-    const label = document.createElement('figcaption');
-    label.textContent = entry.case_id + ' · ' + entry.label;
-    figure.append(img,label);
-    $('galleryItems').append(figure);
-  }
-}).catch(() => { $('galleryStatus').textContent = 'The sample gallery could not load.'; });
-const day = 24 * 60 * 60 * 1000;
-const adult = () => Number.isInteger(Number($('ag').value)) && Number($('ag').value) >= 18;
-let thumbFile = null, thumbUrl = null;
-
-function sync() {
-  const file = $('ph').files[0] || null;
-  const photoConsented = photoConfigLoaded && adult() && $('c1').checked && !deleting;
-  if ((photoConsented ? file : null) !== thumbFile) {
-    if (thumbUrl) URL.revokeObjectURL(thumbUrl);
-    thumbFile = photoConsented ? file : null;
-    thumbUrl = thumbFile ? URL.createObjectURL(thumbFile) : null;
-    if (thumbUrl) $('phThumb').src = thumbUrl; else $('phThumb').removeAttribute('src');
-    $('phThumb').classList.toggle('hid', !file);
-  }
-  const need = [];
-  if (!photoConfigLoaded) need.push('wait for the server to respond');
-  if (!file) need.push('choose a photo');
-  if (!$('c1').checked) need.push('tick the photo consent');
-  if (!adult()) need.push('enter your age (18+)');
-  if (!$('gf').files[0] && !cur.p?.cols[cur.c]?.image) need.push('upload a garment-only photo');
-  $('ph').disabled = deleting;
-  $('cameraStart').disabled = !photoConfigLoaded || !adult() || !$('c1').checked || deleting;
-  if ($('cameraStart').disabled) stopCamera();
-  $('tryNeeds').textContent = need.length ? 'To see it on you: ' + need.join(', ') + '.' : '';
-  $('rn').disabled = need.length > 0 || !!pendingRender || deleting;
-  $('del').disabled = deleting;
-  updateDock();
-}
-function clearPreview() {
-  generation += 1;
-  clearTimeout(expiry);
-  resetComparison();
-  $('preview').classList.add('hid');
-  $('cv').width = 0;
-  for (const id of ['cv', 'lb', 'note']) $(id).classList.add('hid');
-}
-async function erasePhoto() {
-  if (deleting) return;
-  deleting = true;
-  clearTimeout(photoExpiry);
-  clearPreview();
-  $('ph').value = '';
-  sync();
-  try {
-    stopCamera();
-    if (pendingRender) await pendingRender;
-    const body = new FormData();
-    body.append('session', SID);
-    const response = await fetch('/api/delete', {method: 'POST', body});
-    if (!response.ok || !(await response.json()).deleted) throw new Error();
-    SID = crypto.randomUUID();
-    $('msg').textContent = 'FitCheck deleted its photo and preview copies and cleared any measurements you chose to delete from this tab.';
-    toast($('msg').textContent);
-  } catch {
-    $('msg').textContent = 'The local preview was cleared. Server deletion could not be confirmed. Please try again.';
-    toast($('msg').textContent);
-  } finally {
-    deleting = false;
-    sync();
-  }
-}
-$('ag').oninput = sync;
-$('ag').onchange = () => {
-  if ($('ag').value && !adult() && $('ph').files[0]) erasePhoto();
-  sync();
-};
-$('c1').onchange = () => {
-  if (!$('c1').checked) erasePhoto();
-  sync();
-};
-const BODY = ['bu', 'wa', 'hi'];
-$('c2').onchange = () => {
-  if (!$('c2').checked) {
-    recommendRequest++;
-    $('recommendStatus').textContent = '';
-    BODY.forEach(id => { $(id).value = ''; });
-    $('out').classList.add('hid');
-    updateDock();
-  }
-  BODY.forEach(id => { $(id).disabled = !$('c2').checked; });
-};
-$('c2').onchange();
-for (const id of ['ph', 'gf']) {
-  $(id).onchange = () => {
-    if (id === 'ph') {
-      clearTimeout(photoExpiry);
-      if ($('ph').files[0]) photoExpiry = setTimeout(erasePhoto, day);
-    }
-    clearPreview();
-    $('msg').textContent = '';
-    sync();
-  };
-}
-const drop = $('photoDrop');
-drop.ondragover = event => {
-  event.preventDefault();
-  if (!$('ph').disabled) drop.dataset.dragging = '';
-};
-drop.ondragleave = () => { delete drop.dataset.dragging; };
-drop.ondrop = event => {
-  event.preventDefault();
-  delete drop.dataset.dragging;
-  if ($('ph').disabled || !event.dataTransfer.files.length) return;
-  const file = event.dataTransfer.files[0];
-  if (!['image/jpeg','image/png','image/webp'].includes(file.type)) {
-    $('msg').textContent = 'Choose a JPG, PNG or WebP photo.';
-    return;
-  }
-  const transfer = new DataTransfer();
-  transfer.items.add(file);
-  if (event.target === $('phThumb') && $('ph').files[0]) {
-    $('gf').files = transfer.files;
-    $('gf').dispatchEvent(new Event('change', {bubbles: true}));
-    if (!$('rn').disabled) $('rn').click();
-    return;
-  }
-  $('ph').files = transfer.files;
-  $('ph').dispatchEvent(new Event('change', {bubbles: true}));
-};
-
-fetch('/api/tryon-config').then(response => {
-  if (!response.ok) throw new Error();
-  return response.json();
-}).then(config => {
-  remoteBackend = config.remote_backend;
-  if (remoteBackend) {
-    const provider = {local_http: 'the team GPU server', hf: 'Hugging Face', replicate: 'Replicate', gemini: 'Google Gemini'}[remoteBackend];
-    $('photoPrivacy').textContent = `I am a consenting adult team member. FitCheck sends my photo to ${provider}, a third-party model host, to create the preview. FitCheck deletes its copies on request or within 24 hours. The host may retain or log the photo.`;
-    if (remoteBackend === 'gemini') $('photoPrivacy').textContent += ' Gemini is experimental and excluded from the scored evaluation. Use only a service configuration that prohibits training on inputs.';
-    if (remoteBackend === 'hf') $('photoPrivacy').textContent += ' The public Space can queue or hit its quota.';
-  }
-  photoConfigLoaded = true;
-  $('c1').disabled = false;
-  sync();
-}).catch(() => {
-  $('msg').textContent = 'Photo preview is temporarily unavailable. Reload the page to try again.';
-});
-$('rn').onclick = async () => {
-  if ($('rn').disabled) return;
-  clearPreview();
-  const requestGeneration = generation;
-  const body = new FormData();
-  body.append('session', SID);
-  body.append('age', String(Number($('ag').value)));
-  body.append('consent_photo', 'true');
-  if (remoteBackend) {
-    body.append('consent_remote', remoteBackend);
-  }
-  body.append('garment_category', cur.p?.gcat || 'one-pieces');
-  body.append('desc', cur.p ? cur.p.cols[cur.c].name + ' ' + cur.p.name : 'kurta');
-  const photo = $('ph').files[0];
-  body.append('photo', photo);
-  const garmentFile = $('gf').files[0];
-  if (garmentFile) body.append('garment', garmentFile);
-  else if (cur.p?.cols[cur.c]?.image) body.append('sku_id',cur.p.id);
-  else return;
-  $('rn').disabled = true;
-  const validation = await checkClientPhoto(photo);
-  if (requestGeneration !== generation || deleting || !$('c1').checked || !adult()) { sync(); return; }
-  if (validation) { $('msg').textContent = validation; sync(); return; }
-  $('msg').textContent = 'Checking the photo and preparing the preview…';
-  renderProgress(true);
-  pendingRender = (async () => {
-    try {
-      const response = await fetch('/api/tryon', {method: 'POST', body});
-      const result = await response.json();
-      if (requestGeneration !== generation) return;
-      if (!response.ok) {
-        $('msg').textContent = result.error || 'Could not prepare the preview.';
-        if (response.status >= 500) $('sampleGallery').open = true;
-        return;
-      }
-      const image = new Image();
-      image.src = result.image;
-      await image.decode();
-      if (requestGeneration !== generation) return;
-      const canvas = $('cv');
-      canvas.width = image.width;
-      canvas.height = image.height;
-      canvas.getContext('2d').drawImage(image, 0, 0);
-      for (const id of ['cv', 'lb', 'note']) $(id).classList.remove('hid');
-      $('preview').classList.remove('hid');
-      if (!result.mock) showComparison(photo, requestGeneration);
-      const reason = {
-        mock_mode: 'Demo mode is active.',
-        model_unavailable: 'The try-on model is unavailable.',
-        quota_exceeded: 'The try-on provider says the usage quota is exhausted. Enable billing or wait for the quota to reset.',
-        preservation_check: 'The preview did not pass the clothing-only check.'
-      }[result.placeholder_reason];
-      $('msg').textContent = result.mock
-        ? `${reason || 'Try-on is unavailable.'} PLACEHOLDER · original photo. Preview ${result.renders_used} of 3.`
-        : `Done in ${result.latency_s}s. Preview ${result.renders_used} of 3.` + ((result.adjusted || []).length ? ' We straightened your photo for fitting, then placed the result back on your original.' : '');
-      expiry = setTimeout(() => {
-        clearPreview();
-        $('ph').value = '';
-        sync();
-      }, day);
-    } catch {
-      if (requestGeneration === generation) {
-        $('msg').textContent = 'Could not reach the try-on server. Try again or browse the sample gallery.';
-        $('sampleGallery').open = true;
-      }
-    }
-  })();
-  sync();
-  await pendingRender;
-  pendingRender = null;
-  renderProgress(false);
-  sync();
-};
-$('del').onclick = () => {
-  $('c1').checked = false;
-  $('c2').checked = false;
-  $('c2').onchange();
-  $('ag').value = '';
-  $('gf').value = '';
-  erasePhoto();
-};
-sync();
-// fit & returns
-const dirOf = b => [b.direction, b.direction === 'Near true' ? 't3' : 't1'];
-let brandSort = {key: 'ret', descending: true};
-function renderBrands() {
-  const columns = [['brand', 'Brand'], ['ret', 'Size returns'], ['ts', 'Too small'],
-    ['tl', 'Too large'], ['direction', 'Direction'], ['gap', 'Chart gap'], ['chart', 'Chart']];
-  const ordered = [...brands].sort((left, right) => {
-    const {key, descending} = brandSort;
-    const delta = key === 'brand' ? left.brand.localeCompare(right.brand) : (left[key] ?? 0) - (right[key] ?? 0);
-    return descending ? -delta : delta;
-  });
-  const headers = columns.map(([key, label]) => {
-    if (!['brand', 'ret', 'ts', 'tl', 'gap'].includes(key)) return `<th scope="col">${label}</th>`;
-    const selected = key === brandSort.key;
-    const order = brandSort.descending ? 'descending' : 'ascending';
-    return `<th scope="col"${selected ? ' aria-sort="' + order + '"' : ''}><button type="button" data-sort="${key}">${label} <span aria-hidden="true">${selected ? (brandSort.descending ? '↓' : '↑') : '↕'}</span></button></th>`;
-  }).join('');
-  const rows = ordered.map(b => {
-    const d = dirOf(b);
-    const bad = b.chart_unreliable;
-    return `<tr><th scope="row">${b.brand}</th><td>${b.ret}%<span class="meter" aria-hidden="true"><i style="width:${b.ret}%"></i></span></td><td>${b.ts}%</td><td>${b.tl}%</td><td><span class="tag ${d[1]}">${d[0]}</span></td><td>${b.gap === null ? '—' : b.gap} · n=${b.chart_n}</td><td>${bad ? '<span class="tag t1">Unreliable chart</span>' : 'OK'}</td></tr>`;
-  }).join('');
-  $('bt').innerHTML = `<thead><tr>${headers}</tr></thead><tbody>${rows}</tbody>`;
-}
-$('bt').onclick = event => {
-  const button = event.target.closest('[data-sort]');
-  if (!button) return;
-  const key = button.dataset.sort;
-  brandSort = {key, descending: key === brandSort.key ? !brandSort.descending : key !== 'brand'};
-  renderBrands();
-  $('bt').querySelector(`[data-sort="${key}"]`).focus();
-};
-function renderMessages() {
-for (const brand of brands) {
-  const card = document.createElement('details');
-  const summary = document.createElement('summary');
-  summary.textContent = brand.brand;
-  const message = document.createElement('p');
-  message.textContent = brand.msg;
-  const copy = document.createElement('button');
-  copy.type = 'button';
-  copy.className = 'copy';
-  copy.textContent = 'Copy message';
-  copy.onclick = async () => {
-    try {
-      await navigator.clipboard.writeText(brand.msg);
-      toast('Draft message copied.');
-    } catch {
-      toast('Could not copy the draft. You can select and copy the message.');
-    }
-  };
-  card.append(summary, message, copy);
-  $('ms').append(card);
-}
-}
-// Results and branding use the same generated, held-out report as the API.
-const pct = value => value === null || value === undefined ? 'Not run' : value + '%';
-const table = (headers, rows) => `<div class="wrap" tabindex="0"><table><thead><tr>${headers.map(h=>`<th scope="col">${h}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(v=>`<td>${v}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
-function renderResults(report) {
-  const overall = report.overall;
-  const exchange = report.by_source['Kept after exchange'];
-  const business = report.business;
-  const statRow = (name,r) => [name, r.n, pct(r.exact.pct), pct(r.within.pct),
-    `${pct(r.usual.pct)} → ${pct(r.model_on_usual_subset.pct)} (n=${r.usual.n})`, pct(r.first.pct)];
-  const target = (name,score,goal) => `<div class="target"><b>${name} · ${score >= goal ? 'Target met' : 'Target missed'}</b><progress value="${score}" max="100" aria-label="${name} accuracy"></progress><div>${score}% actual · ≥${goal}% target</div></div>`;
-  const sections = [statRow('Overall', overall), ...Object.entries(report.by_source).map(([key,row]) => statRow(key,row)),
-    ...Object.entries(report.by_category).map(([key,row]) => statRow(key,row)),
-    ...Object.entries(report.by_history).map(([key,row]) => statRow('History: '+key,row))];
-  $('rb').innerHTML = `<div class="card"><h2>October fit evaluation</h2>
-    <div class="target-grid">${target('Overall',overall.within.pct,85)}${target('Kept after exchange',exchange.within.pct,60)}</div>
-    ${table(['Slice','Cases','Exact','Within acceptable','Usual size → model (matched)','First choice'],sections)}
-    <p class="mu">The October set contains kept and exchanged orders. First choice scores zero on exchange cases by construction. Orders refunded for size without an exchange are excluded. The usual-size baseline uses cases with a known usual size.</p>
-    <p class="mu">Lowest within-acceptable categories: ${report.worst_categories.join(', ')}.</p></div>
-    <div class="card"><h2>Confidence calibration</h2>${table(['Evidence','Cases','Observed exact match'],Object.entries(report.reliability).map(([name,row])=>[name,row.n,pct((row.accuracy*100).toFixed(2))]))}</div>
-    <div class="card"><h2>Returns projection · Women’s kurtas</h2>
-    <p>Uses ${business.returns.heldout_pairs} October cases with a known usual size. Usual-size errors: ${business.returns.usual_wrong}. Model errors: ${business.returns.model_wrong}.</p>
-    ${table(['Adoption assumption','Returns avoided','Refunds avoided','Logistics saved'],business.returns.scenarios.map(row=>[pct(Math.round(row.adoption*100)),row.avoided,row.refunds,money(row.logistics_inr)]))}
-    <p class="mu">Scenarios multiply the Jan–Sep kurta size-return volume by 25 and apply the held-out relative error change at each adoption level. Assumes 60% refund share and ₹117 per return. These are projections.</p></div>
-    <div class="card"><h2>Planned conversion experiment</h2>
-    <p>Randomise by customer with sticky assignment. Primary metric is kurta PDP purchase conversion. Power target is 80% at a two-sided 5% significance level, with a 3.9% design baseline and 10% relative lift.</p>
-    <p>Plan ${business.ab.weeks} whole weeks and ${business.ab.per_arm.toLocaleString()} sessions per arm. The plan assumes ${business.ab.company_monthly_kurta_sessions.toLocaleString()} eligible company sessions per month, scaling the September sample of ${business.ab.kurta_sessions.toLocaleString()} by ${business.ab.traffic_scale}. The four-week minimum keeps weeks 2–4 available for separate reporting. Verify company traffic and adjust for customer clustering.</p>
-    <p>Measure size-related returns 30 days after purchase. Use intention-to-treat and report weeks 2–4 separately.</p></div>
-    <div class="card warn"><h2>Try-on evaluation</h2><p>The 120-case grid has no approved scores in this deployment. Body-type and skin-tone results are not run.</p><p id="liveMetrics" class="mu">Loading live render measurements…</p></div>`;
-  fetch('/api/metrics').then(response => {
-    if (!response.ok) throw new Error();
-    return response.json();
-  }).then(v => {
-    const cost = v.average_cost_inr !== null ? 'Measured mean cost ' + money(v.average_cost_inr) + '.'
-      : v.estimated_cost_inr !== null ? 'Estimated cost ' + money(v.estimated_cost_inr.toFixed(2)) +
-        ' assuming ' + money(v.estimated_gpu_hour_inr) + ' per GPU-hour for the full render time.'
-      : 'Cost unmeasured.';
-    $('liveMetrics').textContent = v.renders
-      ? `${v.renders} successful logged renders. Server p50 ${v.p50_latency_s.toFixed(2)} s, p95 ${v.p95_latency_s.toFixed(2)} s. ${cost}`
-      : 'No successful renders in the service log. Latency and cost are not run.';
-  }).catch(() => { $('liveMetrics').textContent = 'Render measurements could not be loaded.'; });
-}
-fetch('/api/fit-results').then(response => {
-  if (!response.ok) throw new Error();
-  return response.json();
-}).then(report => {
-  brands = Object.values(report.brands['Women · Kurtas']);
-  const unreliable = brands.filter(brand => brand.chart_unreliable).length;
-  $('fitSummary').textContent = `${brands.length} kurta brands · ${unreliable} charts flagged using consented kept orders`;
-  renderBrands();
-  renderMessages();
-  renderResults(report);
-}).catch(() => {
-  $('rb').textContent = 'The evaluation report could not be loaded.';
-  $('fitSummary').textContent = 'Brand evidence could not be loaded.';
-});
-</script></body></html>
+<script src="/assets/fitcheck.js" defer></script>
+</body>
+</html>

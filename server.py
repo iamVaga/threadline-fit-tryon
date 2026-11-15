@@ -286,6 +286,15 @@ def catalog():
     return JSONResponse(items, headers=NO_STORE)
 
 
+@app.get("/api/fit-products")
+def fit_products():
+    """Product choices for the size finder, independent of photo availability."""
+    return [
+        {"sku": sku, "brand": product["brand"], "name": product["product_name"],
+         "category": product["category"], "colour": product["colour"]}
+        for sku, product in model()["products"].items()
+    ]
+
 class RecommendationInput(BaseModel):
     test_id: str | None = None
     customer_id: str | None = None
@@ -460,6 +469,7 @@ def delete(session: str = Form(...)):
     return JSONResponse({"deleted": True}, headers=NO_STORE)
 
 
+app.mount("/assets", StaticFiles(directory=ROOT / "static" / "assets"), name="assets")
 app.mount("/products", StaticFiles(directory=PRODUCTS), name="products")
 app.mount("/garments", StaticFiles(directory=GARMENTS), name="garments")
 
