@@ -611,12 +611,12 @@ function stopCamera() {
   $('cameraPanel').classList.add('hid');
 }
 $('cameraStart').onclick = async () => {
-  if ($('ph').disabled) return;
+  if ($('cameraStart').disabled) return;
   stopCamera();
   const opening = cameraRequest;
   try {
     const stream = await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1080},height:{ideal:1920}},audio:false});
-    if (opening !== cameraRequest || $('ph').disabled) {
+    if (opening !== cameraRequest || $('cameraStart').disabled) {
       stream.getTracks().forEach(track => track.stop());
       return;
     }
@@ -638,7 +638,7 @@ $('capture').onclick = () => {
   frame.height = video.videoHeight;
   frame.getContext('2d').drawImage(video,0,0);
   frame.toBlob(blob => {
-    if (!blob || captureRequest !== cameraRequest || $('ph').disabled) return;
+    if (!blob || captureRequest !== cameraRequest || $('cameraStart').disabled) return;
     const files = new DataTransfer();
     files.items.add(new File([blob], 'capture.jpg', {type:'image/jpeg'}));
     $('ph').files = files.files;
@@ -691,10 +691,11 @@ let thumbFile = null, thumbUrl = null;
 
 function sync() {
   const file = $('ph').files[0] || null;
-  if (file !== thumbFile) {
+  const photoConsented = photoConfigLoaded && adult() && $('c1').checked && !deleting;
+  if ((photoConsented ? file : null) !== thumbFile) {
     if (thumbUrl) URL.revokeObjectURL(thumbUrl);
-    thumbFile = file;
-    thumbUrl = file ? URL.createObjectURL(file) : null;
+    thumbFile = photoConsented ? file : null;
+    thumbUrl = thumbFile ? URL.createObjectURL(thumbFile) : null;
     if (thumbUrl) $('phThumb').src = thumbUrl; else $('phThumb').removeAttribute('src');
     $('phThumb').classList.toggle('hid', !file);
   }
@@ -704,9 +705,9 @@ function sync() {
   if (!$('c1').checked) need.push('tick the photo consent');
   if (!adult()) need.push('enter your age (18+)');
   if (!$('gf').files[0] && !cur.p?.cols[cur.c]?.image) need.push('upload a garment-only photo');
-  $('ph').disabled = !photoConfigLoaded || !adult() || !$('c1').checked || deleting;
-  $('cameraStart').disabled = $('ph').disabled;
-  if ($('ph').disabled) stopCamera();
+  $('ph').disabled = deleting;
+  $('cameraStart').disabled = !photoConfigLoaded || !adult() || !$('c1').checked || deleting;
+  if ($('cameraStart').disabled) stopCamera();
   $('tryNeeds').textContent = need.length ? 'To see it on you: ' + need.join(', ') + '.' : '';
   $('rn').disabled = need.length > 0 || !!pendingRender || deleting;
   $('del').disabled = deleting;
