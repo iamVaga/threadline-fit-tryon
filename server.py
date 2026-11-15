@@ -270,7 +270,7 @@ def catalog():
                       "fit": p["fit_type"], "price": p["mrp_inr"], "currency": "INR",
                       "garment_category": "one-pieces", "variants": [variant]})
     free = []
-    for name in ("free_catalog.json", "indo_catalog.json"):
+    for name in ("indo_catalog.json", "free_catalog.json"):
         try:
             free += json.loads((PRODUCTS / name).read_text(encoding="utf-8"))
         except (OSError, ValueError):
@@ -280,7 +280,7 @@ def catalog():
             continue
         items.append({"sku_id": f["sku_id"], "brand": f["brand"], "name": f["name"], "fit": f["fit"],
                       "price": f["price"], "currency": f["currency"], "garment_category": f["garment_category"],
-                      "category_label": CATEGORY_LABELS.get(f["category"]) or CATEGORY_LABELS[f["garment_category"]],
+                      "category_label": f.get("category_label") or CATEGORY_LABELS.get(f["category"]) or CATEGORY_LABELS[f["garment_category"]],
                       "free": True, "variants": [{"sku": f["sku_id"], "colour": f["colour"], "hex": f["hex"],
                                                   "image": "/products/" + f["image"]}]})
     return JSONResponse(items, headers=NO_STORE)
