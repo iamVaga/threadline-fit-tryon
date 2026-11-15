@@ -44,6 +44,12 @@ GALLERY = ROOT / "static" / "gallery"
 NO_STORE = {"Cache-Control": "no-store"}
 
 
+CATEGORY_LABELS = {
+    "saree": "Sarees", "lehenga": "Lehengas", "gowns": "Gowns", "kurta_men": "Men's Kurtas",
+    "blouse": "Blouses", "dhoti_pants": "Dhoti Pants", "womens-dresses": "Dresses", "tops": "Tops",
+    "mens-shirts": "Men's Shirts", "one-pieces": "Dresses & Sets", "bottoms": "Bottoms"}
+
+
 def lock_index(session):
     return hash(session) % len(LOCKS)
 
@@ -252,6 +258,8 @@ def catalog():
                "Sky blue": "#5687a6", "Pink": "#ab6784", "Maroon": "#7e3c52"}
     items = []
     for sku, p in model()["products"].items():
+        if not (isinstance(assets.get(sku), str) and (PRODUCTS / assets[sku]).is_file()):
+            continue  # no real photo: keep illustrations out of the shop (SKU lookup still works)
         if p["category"] != "Women · Kurtas":
             continue
         variant = {"sku": sku, "colour": p["colour"], "hex": colours.get(p["colour"], "#967087")}
@@ -272,6 +280,7 @@ def catalog():
             continue
         items.append({"sku_id": f["sku_id"], "brand": f["brand"], "name": f["name"], "fit": f["fit"],
                       "price": f["price"], "currency": f["currency"], "garment_category": f["garment_category"],
+                      "category_label": CATEGORY_LABELS.get(f["category"]) or CATEGORY_LABELS[f["garment_category"]],
                       "free": True, "variants": [{"sku": f["sku_id"], "colour": f["colour"], "hex": f["hex"],
                                                   "image": "/products/" + f["image"]}]})
     return JSONResponse(items, headers=NO_STORE)

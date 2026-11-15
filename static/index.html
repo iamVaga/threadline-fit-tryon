@@ -56,15 +56,20 @@ nav button:not(.on):hover,.stepper button:hover { background:var(--surface); col
 .sw svg { width:46%; max-height:185px; }
 #swName { position:absolute; bottom:12px; padding:4px 11px; border-radius:999px; background:var(--plum); color:#000; font-size:13px; font-weight:750; }
 .catbar { display:grid; gap:8px; margin-bottom:12px; }
-.catalog { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; max-height:430px; overflow:auto; padding:3px; margin-bottom:14px; }
-.cat-card { display:grid; align-content:start; gap:3px; text-align:left; padding:8px; border:1px solid var(--line); border-radius:14px; background:var(--ivory); color:var(--ink); transition:border-color var(--ease),box-shadow var(--ease); }
+.catalog { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px 10px; max-height:680px; overflow:auto; padding:3px; margin-bottom:14px; }
+.catchips { display:flex; gap:8px; overflow-x:auto; padding:2px 0 12px; }
+.catchips button { flex:none; padding:7px 14px; border:1px solid var(--line); border-radius:999px; background:transparent; color:var(--ink); font-size:13px; }
+.catchips button[aria-pressed=true] { background:var(--plum); color:#000; border-color:var(--plum); font-weight:700; }
+.cat-card { display:grid; align-content:start; gap:2px; text-align:left; padding:0 0 8px; border:1px solid transparent; border-radius:6px; background:transparent; color:var(--ink); transition:border-color var(--ease),box-shadow var(--ease); }
 .cat-card:hover { border-color:var(--plum); box-shadow:0 0 18px #39ff1426; }
-.cat-card[aria-pressed=true] { border:2px solid var(--plum); padding:7px; box-shadow:0 0 22px #39ff1440; }
-.cat-card b { font-size:13px; line-height:1.3; }
+.cat-card[aria-pressed=true] { border:2px solid var(--plum); padding:0 0 7px; box-shadow:0 0 22px #39ff1440; }
+.cat-card .br { font-size:14px; font-weight:700; padding:0 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cat-card .nm { font-size:13px; padding:0 6px; color:var(--mu,#aaa); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cat-card .pr { font-size:13px; font-weight:700; padding:0 6px; }
 .cat-card .mu { font-size:12px; line-height:1.35; }
-.ct { aspect-ratio:3/4; display:grid; place-items:center; border-radius:10px; background:#101010; margin-bottom:4px; }
+.ct { aspect-ratio:3/4; display:grid; place-items:center; border-radius:4px; background:#101010; margin-bottom:6px; overflow:hidden; }
 .ct svg { width:60%; }
-.ct img { width:100%; height:100%; object-fit:cover; border-radius:10px; }
+.ct img { width:100%; height:100%; object-fit:cover; }
 .sw img { max-width:100%; max-height:240px; object-fit:contain; border-radius:8px; }
 .precise { margin-top:14px; padding:2px 14px 14px; border:1px solid var(--line); border-radius:14px; background:var(--ivory); }
 .precise>summary { margin:0 -14px; padding:0 14px; }
@@ -225,15 +230,16 @@ th button { min-height:44px; border:0; padding:0; background:none; color:var(--i
  <div class="shop-grid">
  <article class="card" id="pickStep" tabindex="-1">
  <div class="card-head"><span class="step-index" aria-hidden="true">1</span><h2>Pick a garment</h2></div>
+ <div id="catChips" class="catchips" role="group" aria-label="Clothing category"></div>
  <div class="catbar">
    <div><label class="sr-only" for="cs">Search garments</label><input id="cs" type="search" placeholder="Search saree, kurta, shirt, brand…"></div>
    <div><label class="sr-only" for="cbrand">Brand</label><select id="cbrand"></select></div>
    <div><label class="sr-only" for="csort">Sort</label><select id="csort"><option value="">Featured</option><option value="lo">Price: low to high</option><option value="hi">Price: high to low</option></select></div>
  </div>
- <div id="catalog" class="catalog" role="group" aria-label="Kurta catalogue"></div>
- <button id="catalogMore" class="btn s hid" type="button">Show more kurtas</button>
+ <div id="catalog" class="catalog" role="group" aria-label="Clothing catalogue"></div>
+ <button id="catalogMore" class="btn s hid" type="button">Show more</button>
  <p id="catNote" class="mu"></p>
- <p id="catEmpty" class="mu hid">No kurtas match. Try another search or brand.</p>
+ <p id="catEmpty" class="mu hid">Nothing matches. Try another category, search or brand.</p>
  <div class="product picked"><div class="sw" id="sw"><div id="swSvg"></div><span id="swName">Kurta</span></div>
  <div class="product-meta"><span class="eyebrow">Selected</span><h3 id="pn"></h3><p class="mu" id="pmeta"></p>
  <span class="field-label" id="colourLabel">Colour</span><div id="colourChips" class="chips" role="group" aria-labelledby="colourLabel"></div>
@@ -381,7 +387,7 @@ document.querySelectorAll('nav button').forEach(button => {
 });
 // ---------- catalog ----------
 let CAT = [];
-let visibleProducts = 12;
+let visibleProducts = 12, catFilter = '';
 const KP = {
   straight: ['M37 13 22 18 6 54l16 8 8-16-3 84h46l-3-84 8 16 16-8-16-36-15-5c-3 8-8 12-13 12s-10-4-13-12Z', 'M29 123h42'],
   aline: ['M37 13 22 18 6 54l16 8 8-16-10 84h60l-10-84 8 16 16-8-16-36-15-5c-3 8-8 12-13 12s-10-4-13-12Z', 'M23 123h54']
@@ -398,7 +404,7 @@ const money = (n, c) => n == null ? 'Price n/a' : (c === 'USD' ? '$' : '₹') + 
 const cur = {p: null, c: 0};
 function renderCatalog() {
   const q = $('cs').value.trim().toLowerCase(), br = $('cbrand').value, so = $('csort').value;
-  const list = CAT.filter(p => (!br || p.brand === br) &&
+  const list = CAT.filter(p => (!br || p.brand === br) && (!catFilter || p.cat === catFilter) &&
     (!q || (p.brand + ' ' + p.name + ' ' + p.cols.map(c => c.name).join(' ')).toLowerCase().includes(q)));
   if (so === 'lo') list.sort((a, b) => (a.price ?? 1e9) - (b.price ?? 1e9));
   if (so === 'hi') list.sort((a, b) => (b.price ?? -1) - (a.price ?? -1));
@@ -415,12 +421,13 @@ function renderCatalog() {
       img.src = p.cols[0].image; img.alt = ''; img.loading = 'lazy';
       tile.append(img);
     } else tile.innerHTML = kurtaSvg(p.cols[0].hex, p.shape);
-    const name = document.createElement('b'), brand = document.createElement('span'), price = document.createElement('span');
-    name.textContent = p.name;
-    brand.className = price.className = 'mu';
+    const brand = document.createElement('span'), name = document.createElement('span'), price = document.createElement('span');
+    brand.className = 'br'; name.className = 'nm'; price.className = 'pr';
     brand.textContent = p.brand;
-    price.textContent = `${money(p.price, p.currency)} · ${p.cols.length} colours`;
-    card.append(tile, name, brand, price);
+    name.textContent = p.name;
+    name.title = p.name;
+    price.textContent = money(p.price, p.currency);
+    card.append(tile, brand, name, price);
     card.dataset.id = p.id;
     card.onclick = () => selectProduct(p);
     return card;
@@ -474,12 +481,24 @@ fetch('/api/catalog').then(response => {
   return response.json();
 }).then(items => {
   CAT = items.map(item => ({id:item.sku_id, brand:item.brand, name:item.name, price:item.price,
-    fit:item.fit, shape:'straight', currency:item.currency, gcat:item.garment_category, free:!!item.free, cols:item.variants.map(v => ({name:v.colour, hex:v.hex, image:v.image, sku:v.sku}))}));
+    fit:item.fit, shape:'straight', cat:item.category_label, currency:item.currency, gcat:item.garment_category, free:!!item.free, cols:item.variants.map(v => ({name:v.colour, hex:v.hex, image:v.image, sku:v.sku}))}));
   const available = [...new Set(CAT.map(item => item.brand))].sort();
   for (const id of ['cbrand','ub']) $(id).replaceChildren(new Option(id === 'ub' ? 'Not sure / other brand' : 'All brands',''), ...available.map(brand => new Option(brand)));
-  $('catNote').textContent = 'Synthetic kurta catalogue plus free sample clothing from DummyJSON, Fake Store and Indo Fashion images. Size advice covers the synthetic kurtas only.';
-  if (CAT.length) selectProduct(CAT.find(item => !item.free) || CAT[0]);
-  CAT.sort((a, b) => Number(!!b.free) - Number(!!a.free)); // photo items first (stable sort)
+  $('catNote').textContent = 'Sample catalogue from the Indo Fashion dataset, DummyJSON and Fake Store. Prices where available are in USD. Size advice covers the synthetic kurta SKUs only.';
+  const cats = [...new Set(CAT.map(item => item.cat).filter(Boolean))].sort();
+  $('catChips').replaceChildren(...['', ...cats].map(name => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.textContent = name || 'All';
+    chip.setAttribute('aria-pressed', String(name === catFilter));
+    chip.onclick = () => {
+      catFilter = name; visibleProducts = 12;
+      $('catChips').querySelectorAll('button').forEach(c => c.setAttribute('aria-pressed', String(c === chip)));
+      renderCatalog();
+    };
+    return chip;
+  }));
+  if (CAT.length) selectProduct(CAT[0]);
   renderCatalog();
 }).catch(() => {
   $('catNote').textContent = 'The catalogue could not load. You can still enter a SKU or test case below.';
