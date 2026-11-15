@@ -3,6 +3,7 @@ import base64
 import csv
 from datetime import datetime, timezone
 from functools import lru_cache
+from html import unescape
 import io
 import json
 import os
@@ -258,17 +259,17 @@ def catalog():
                "Sky blue": "#5687a6", "Pink": "#ab6784", "Maroon": "#7e3c52"}
     items = []
     for sku, p in model()["products"].items():
-        if not (isinstance(assets.get(sku), str) and (PRODUCTS / assets[sku]).is_file()):
-            continue  # no real photo: keep illustrations out of the shop (SKU lookup still works)
-        if p["category"] != "Women · Kurtas":
-            continue
-        variant = {"sku": sku, "colour": p["colour"], "hex": colours.get(p["colour"], "#967087")}
         filename = assets.get(sku)
-        if isinstance(filename, str) and Path(filename).name == filename and (PRODUCTS / filename).is_file():
-            variant["image"] = "/products/" + filename
+        if not (isinstance(filename, str) and Path(filename).name == filename and (PRODUCTS / filename).is_file()):
+            continue
+        group, kind = p["category"].split(" · ", 1)
+        garment_category = {"Dresses": "one-pieces", "Kurtas": "one-pieces", "Jeans": "bottoms"}.get(kind, "tops")
+        variant = {"sku": sku, "colour": p["colour"], "hex": colours.get(p["colour"], "#967087"),
+                   "image": "/products/" + filename}
         items.append({"sku_id": sku, "brand": p["brand"], "name": p["product_name"],
                       "fit": p["fit_type"], "price": p["mrp_inr"], "currency": "INR",
-                      "garment_category": "one-pieces", "variants": [variant]})
+                      "category_label": f"{group}'s {kind}", "garment_category": garment_category,
+                      "variants": [variant]})
     free = []
     for name in ("indo_catalog.json", "free_catalog.json"):
         try:
@@ -278,7 +279,7 @@ def catalog():
     for f in free:
         if Path(f["image"]).name != f["image"] or not (PRODUCTS / f["image"]).is_file():
             continue
-        items.append({"sku_id": f["sku_id"], "brand": f["brand"], "name": f["name"], "fit": f["fit"],
+        items.append({"sku_id": f["sku_id"], "brand": unescape(f["brand"]), "name": unescape(f["name"]).strip(), "fit": f["fit"],
                       "price": f["price"], "currency": f["currency"], "garment_category": f["garment_category"],
                       "category_label": f.get("category_label") or CATEGORY_LABELS.get(f["category"]) or CATEGORY_LABELS[f["garment_category"]],
                       "free": True, "variants": [{"sku": f["sku_id"], "colour": f["colour"], "hex": f["hex"],

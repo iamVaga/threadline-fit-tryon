@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f8f7f2">
-  <title>FitCheck | Size Finder and Virtual Try-On</title>
+  <title>FitCheck | Garments, Size Finder and Virtual Try-On</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Instrument+Serif&amp;display=swap" rel="stylesheet">
@@ -16,14 +16,43 @@
   <div class="header-inner">
     <a class="wordmark" href="/" aria-label="FitCheck home">FitCheck<span aria-hidden="true">.</span></a>
     <nav class="main-nav" aria-label="FitCheck tools">
-      <button type="button" class="on" data-view="sizeStep" aria-pressed="true" aria-controls="sizeStep">Size Finder</button>
+      <button type="button" class="on" data-view="inventoryStep" aria-pressed="true" aria-controls="inventoryStep">Garments</button>
+      <button type="button" data-view="sizeStep" aria-pressed="false" aria-controls="sizeStep">Size Finder</button>
       <button type="button" data-view="tryStep" aria-pressed="false" aria-controls="tryStep">Virtual Try-On</button>
     </nav>
   </div>
 </header>
 <main id="main" tabindex="-1">
-  <section class="tool-panel" id="sizeStep" tabindex="-1" aria-labelledby="sizeTitle">
- <div class="panel-head"><h1 id="sizeTitle">Find my size</h1><p>Pick a garment to get size advice based on how the brand fits.</p></div>
+  <section class="selection hid" id="selection" aria-labelledby="selectionTitle" tabindex="-1">
+    <img id="selectionPhoto" class="selection-photo hid" alt="">
+    <div class="selection-detail">
+      <h2 id="selectionTitle">Selected garment</h2>
+      <p id="selectionName"></p>
+      <p id="selectionMeta" class="mu"></p>
+    </div>
+    <button type="button" class="text-button" id="changeGarment">Change</button>
+    <div class="selection-actions" id="selectionActions">
+      <button type="button" class="btn" id="selectedTry">See it on me</button>
+      <button type="button" class="btn s" id="selectedSize">Find my size</button>
+    </div>
+  </section>
+
+  <section class="inventory-panel" id="inventoryStep" tabindex="-1" aria-labelledby="inventoryTitle">
+    <div class="panel-head">
+      <h1 id="inventoryTitle">Choose a garment</h1>
+      <p>Pick an item from the inventory to see it on you.</p>
+    </div>
+    <div class="fields inventory-fields">
+      <div><label for="inventoryCategory">Category</label><select id="inventoryCategory"><option value="">All categories</option></select></div>
+      <div><label for="inventorySearch">Search inventory</label><input id="inventorySearch" type="search" enterkeyhint="search" placeholder="e.g. kurta or T-shirt"></div>
+    </div>
+    <p id="inventoryStatus" class="mu inventory-status" role="status">Loading garments…</p>
+    <ul id="inventoryGrid" class="inventory-grid" aria-label="Inventory garments"></ul>
+    <button class="btn s hid" id="inventoryMore" type="button">Show more garments</button>
+  </section>
+
+  <section class="tool-panel hid" id="sizeStep" tabindex="-1" aria-labelledby="sizeTitle">
+ <div class="panel-head"><h1 id="sizeTitle">Find my size</h1><p>Get a size recommendation for a garment in the fit catalogue.</p><p id="fitUnavailable" class="mu hid">This inventory item has no size data. Choose a garment below for size advice.</p></div>
  <div class="fit-picker" id="fitPicker">
    <div class="fields">
      <div><label for="fitCategory">Category</label><select id="fitCategory"><option value="">All categories</option></select></div>
@@ -31,13 +60,12 @@
    </div>
    <p id="fitSearchState" class="mu" role="status"></p>
    <ul id="fitMatches" class="fit-matches" aria-label="Matching garments"></ul>
-   <p id="fitChoice" class="fit-choice hid" role="status"></p>
  </div>
  <div class="demo-tools"><button type="button" id="trySampleCase" class="text-button" aria-controls="out">Try a size demo <span aria-hidden="true">→</span></button>
  </div>
  <div id="out" class="result-size hid" tabindex="-1" aria-live="polite">
    <div class="size">
-     <div><span class="eyebrow">Recommended size</span><div class="badge" id="sz">M</div></div>
+     <div><span class="eyebrow" id="resultTitle">Recommended size</span><div class="badge" id="sz">M</div></div>
      <div class="confidence"><b id="cf"></b></div>
    </div>
    <div class="mu" id="rs"></div><div class="tag t2 hid" id="sizeHint"></div>
@@ -79,12 +107,11 @@
   <section class="tool-panel hid" id="tryStep" tabindex="-1" aria-labelledby="tryTitle">
  <div class="panel-head"><h1 id="tryTitle">Virtual try-on</h1><p>See a simulated preview using your own photo. For adults 18+.</p></div>
  <div class="garment-picker">
-   <label for="garmentSource">Garment</label>
+   <label for="garmentSource">Garment source</label>
    <select id="garmentSource">
      <option value="">Upload a garment photo</option>
-     <option value="FS-18">White T-shirt (sample)</option>
-     <option value="DJ-180">Light dress (sample)</option>
    </select>
+   <button type="button" class="text-button" id="tryPickGarment">Choose from inventory</button>
    <div id="garmentUpload" class="garment-upload">
      <label for="garmentType">Garment type</label>
      <select id="garmentType"><option value="tops">Top</option><option value="bottoms">Bottom</option><option value="one-pieces">Dress or one-piece</option></select>

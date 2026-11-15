@@ -2,18 +2,26 @@ const $ = id => document.getElementById(id);
 const visible = (id, show) => $(id).classList.toggle('hid', !show);
 const letterSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'];
 const jeansSizes = ['24', '26', '28', '30', '32', '34', '36', '38', '40', '42'];
-const views = ['sizeStep', 'tryStep', 'fit', 'res'];
+const views = ['inventoryStep', 'sizeStep', 'tryStep', 'fit', 'res'];
 const navigation = document.querySelectorAll('[data-view]');
 const inr = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 });
 const money = amount => inr.format(Number(amount));
-let activeView = 'sizeStep';
+let activeView = 'inventoryStep';
+let selectedGarment;
+let inventory = [];
+let inventoryRequest;
+const inventoryPageSize = 12;
+let inventoryLimit = inventoryPageSize;
 let brands = [];
 let fitProducts = [];
 let fitCatalogueRequest;
 let recommendRequest = 0;
 
 function showView(view) {
-  if (view === activeView) return;
+  if (view === activeView) {
+    if (view === 'inventoryStep') loadInventory();
+    return;
+  }
   if (activeView === 'tryStep') stopCamera();
   activeView = view;
   for (const id of views) visible(id, id === view);
@@ -22,6 +30,8 @@ function showView(view) {
     button.classList.toggle('on', selected);
     button.setAttribute('aria-pressed', String(selected));
   }
+  renderSelection();
+  if (view === 'inventoryStep') loadInventory();
   if (view === 'sizeStep') loadFitProducts();
   if (view === 'tryStep') {
     loadPhotoConfig();
@@ -45,10 +55,151 @@ function resetSizeForm(sku) {
   $('recommendStatus').textContent = '';
   $('technicalTiming').textContent = '';
   visible('out', false);
-  visible('fitChoice', false);
   visible('fitInputs', !!sku.trim());
   updateUsualSizes();
 }
+
+function renderSelection() {
+  const item = selectedGarment;
+  const inTool = ['inventoryStep', 'sizeStep', 'tryStep'].includes(activeView);
+  visible('selection', !!item && inTool);
+  visible('fitUnavailable', !!item && !item.hasFit);
+  if (!item) return;
+  $('selectionName').textContent = item.name;
+  $('selectionMeta').textContent = [item.brand, item.category, !item.image && 'No inventory photo'].filter(Boolean).join(' · ');
+  const thumbnail = $('selectionPhoto');
+  if (item.image) thumbnail.src = item.image;
+  else thumbnail.removeAttribute('src');
+  visible('selectionPhoto', !!item.image);
+  visible('selectionActions', activeView === 'inventoryStep');
+  visible('selectedSize', item.hasFit);
+}
+
+function setGarment(item) {
+  if (selectedGarment?.sku === item.sku && selectedGarment.image === item.image) return;
+  selectedGarment = item;
+  const source = $('garmentSource');
+  source.replaceChildren(new Option('Upload a garment photo', ''));
+  if (item.image) {
+    source.add(new Option('Use selected garment', 'inventory'));
+    source.value = 'inventory';
+  }
+  if (item.garmentType) $('garmentType').value = item.garmentType;
+  $('gf').value = '';
+  renderSelection();
+  updateInventorySelection();
+  updateGarment();
+}
+
+function fromFitCatalogue(item) {
+  const photographed = inventory.find(garment => garment.sku === item.sku);
+  if (photographed) return photographed;
+  const kind = item.category.split(' · ')[1];
+  const garmentType = { Dresses: 'one-pieces', Kurtas: 'one-pieces', Jeans: 'bottoms' }[kind] || 'tops';
+  return { ...item, hasFit: true, garmentType };
+}
+
+function updateInventorySelection() {
+  for (const button of $('inventoryGrid').querySelectorAll('button')) {
+    button.setAttribute('aria-pressed', String(button.dataset.sku === selectedGarment?.sku));
+  }
+}
+
+function loadInventory() {
+  if (inventoryRequest) return;
+  $('inventoryStatus').textContent = 'Loading garments…';
+  inventoryRequest = fetch('/api/catalog').then(response => {
+    if (!response.ok) throw new Error();
+    return response.json();
+  }).then(items => {
+    inventory = items.flatMap(item => {
+      const photo = item.variants.find(variant => variant.image);
+      return photo ? [{
+        sku: item.sku_id,
+        name: item.name.trim(),
+        brand: item.brand,
+        category: item.category_label || 'Other',
+        garmentType: item.garment_category,
+        hasFit: !item.free,
+        image: photo.image,
+      }] : [];
+    });
+    const featured = ['in-67b3ab82bb.jpg', 'in-a6f53586f0.jpg', 'fs-18.png', 'in-b5e04df86a.jpg'];
+    const rank = item => {
+      const index = featured.indexOf(item.image.split('/').pop());
+      return index < 0 ? featured.length : index;
+    };
+    inventory.sort((left, right) => rank(left) - rank(right));
+    const categories = [...new Set(inventory.map(item => item.category))].sort();
+    $('inventoryCategory').append(...categories.map(value => new Option(value)));
+    const photographed = inventory.find(item => item.sku === selectedGarment?.sku);
+    if (photographed && !selectedGarment.image) setGarment(photographed);
+    renderInventory();
+  }).catch(() => {
+    inventoryRequest = null;
+    $('inventoryStatus').textContent = 'Inventory could not load. Reopen Garments to retry, or upload a garment in Virtual Try-On.';
+  });
+}
+
+function renderInventory() {
+  const category = $('inventoryCategory').value;
+  const query = $('inventorySearch').value.trim().toLowerCase();
+  const matches = inventory.filter(item => {
+    return (!category || item.category === category) &&
+      [item.name, item.brand, item.category].join(' ').toLowerCase().includes(query);
+  });
+  $('inventoryStatus').textContent = matches.length
+    ? matches.length + (matches.length === 1 ? ' garment' : ' garments')
+    : 'No matching garments. Try a different name or category.';
+  $('inventoryGrid').replaceChildren(...matches.slice(0, inventoryLimit).map((item, index) => {
+    const row = document.createElement('li');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.sku = item.sku;
+    button.setAttribute('aria-pressed', String(selectedGarment?.sku === item.sku));
+    const image = document.createElement('img');
+    image.src = item.image;
+    image.alt = '';
+    image.loading = index < 4 ? 'eager' : 'lazy';
+    image.decoding = 'async';
+    const name = document.createElement('span');
+    name.className = 'inventory-name';
+    name.textContent = item.name;
+    const categoryLabel = document.createElement('small');
+    categoryLabel.textContent = item.category;
+    button.append(image, name, categoryLabel);
+    button.onclick = () => {
+      if (selectedGarment?.sku !== item.sku) {
+        setGarment(item);
+        resetSizeForm(item.hasFit ? item.sku : '');
+      }
+      focusSection($('selection'));
+    };
+    row.append(button);
+    return row;
+  }));
+  visible('inventoryMore', inventoryLimit < matches.length);
+}
+
+function filterInventory() {
+  inventoryLimit = inventoryPageSize;
+  if (inventoryRequest) renderInventory();
+}
+$('inventorySearch').oninput = filterInventory;
+$('inventoryCategory').onchange = filterInventory;
+$('inventoryMore').onclick = () => {
+  const previous = inventoryLimit;
+  inventoryLimit += inventoryPageSize;
+  renderInventory();
+  $('inventoryGrid').children[previous]?.querySelector('button').focus();
+};
+$('changeGarment').onclick = () => {
+  if (activeView === 'inventoryStep') focusSection($('inventoryStep'));
+  else showView('inventoryStep');
+};
+$('selectedTry').onclick = () => showView('tryStep');
+$('selectedSize').onclick = () => showView('sizeStep');
+$('tryPickGarment').onclick = () => showView('inventoryStep');
 
 function loadFitProducts() {
   if (fitCatalogueRequest) return;
@@ -93,9 +244,8 @@ function renderFitMatches() {
     brand.textContent = item.brand + ' · ' + item.sku;
     button.append(label, brand);
     button.onclick = () => {
+      setGarment(fromFitCatalogue(item));
       resetSizeForm(item.sku);
-      $('fitChoice').textContent = item.brand + ' · ' + item.name;
-      visible('fitChoice', true);
       $('fitSearchState').textContent = '';
       $('fitMatches').replaceChildren();
       $('us').focus();
@@ -117,7 +267,7 @@ function updateUsualSizes() {
 }
 
 $('skuLookup').oninput = () => resetSizeForm($('skuLookup').value);
-loadFitProducts();
+loadInventory();
 function runSampleCase() {
   $('testLookup').value = 'FT-10026';
   rec(true);
@@ -133,8 +283,7 @@ async function rec(lookup = false) {
   const data = {};
   if (lookup) {
     data.test_id = $('testLookup').value.trim().toUpperCase();
-    visible('fitChoice', false);
-  }
+    }
   else {
     data.sku_id = $('skuLookup').value.trim().toUpperCase();
     data.customer_id = $('customerLookup').value.trim().toUpperCase() || null;
@@ -166,6 +315,7 @@ async function rec(lookup = false) {
       $('recommendStatus').textContent = result.error || 'Check your entries and try again.';
       return;
     }
+    $('resultTitle').textContent = lookup ? 'Demo recommendation' : 'Recommended size';
     $('sz').textContent = result.size;
     $('cf').textContent = result.confidence === null ? 'Uncalibrated' : `${(result.confidence*100).toFixed(1)}% confidence`;
     $('rs').textContent = result.reason;
@@ -183,12 +333,16 @@ async function rec(lookup = false) {
     $('recommendStatus').textContent = '';
     visible('out', true);
     if (activeView === 'sizeStep') focusSection($('out'));
-    if (lookup) {
+    if (!lookup && result.sku_id !== selectedGarment?.sku) {
+      const fitItem = fitProducts.find(item => item.sku === result.sku_id);
+      if (fitItem) setGarment(fromFitCatalogue(fitItem));
+    }
+    if (lookup && !selectedGarment) {
       $('skuLookup').value = result.sku_id;
       visible('fitInputs', true);
       updateUsualSizes();
     }
-    if (lookup && result.needs_input) {
+    if (lookup && result.needs_input && !selectedGarment) {
       $('recommendStatus').textContent = 'Add your usual size and fit preference to refine this recommendation.';
     }
   } catch {
@@ -345,19 +499,16 @@ const day = 24 * 60 * 60 * 1000;
 const adult = () => Number.isInteger(Number($('ag').value)) && Number($('ag').value) >= 18;
 let thumbFile = null, thumbUrl = null;
 
-const sampleGarments = {
-  'FS-18': { name: 'white T-shirt', category: 'tops' },
-  'DJ-180': { name: 'light dress', category: 'one-pieces' },
-};
-const activeSample = () => sampleGarments[$('garmentSource').value];
-const garmentCategory = () => activeSample()?.category || $('garmentType').value;
+const inventoryGarment = () => $('garmentSource').value === 'inventory' ? selectedGarment : null;
+const garmentCategory = () => inventoryGarment()?.garmentType || $('garmentType').value;
 
 function updateGarment() {
   const crop = garmentCategory() === 'tops'
     ? 'Keep your head to hips in frame.' : 'Keep your head to feet in frame.';
   $('photoGuide').textContent = 'Use a clear photo of one person. ' + crop;
   $('cameraGuide').textContent = crop + ' Use even lighting and a plain background.';
-  visible('garmentUpload', !activeSample());
+  visible('garmentUpload', !inventoryGarment());
+  visible('tryPickGarment', !inventoryGarment());
   $('msg').textContent = '';
   clearPreview();
   sync();
@@ -380,7 +531,7 @@ function sync() {
   const need = [];
   if (photoConfigFailed) need.push('Reload the page to try the preview again.');
   else if (!photoConfigLoaded) need.push('Loading photo consent…');
-  else if (!activeSample() && !$('gf').files[0]) need.push('Add a garment photo or choose a sample.');
+  else if (!inventoryGarment() && !$('gf').files[0]) need.push('Add a garment photo or choose a sample.');
   else if (!file) need.push('Choose your photo.');
   else if (!$('c1').checked || !adult()) need.push('Enter your age and agree to photo processing.');
   $('ph').disabled = deleting;
@@ -515,13 +666,14 @@ $('rn').onclick = async () => {
   if (remoteBackend) {
     body.append('consent_remote', remoteBackend);
   }
-  const sample = activeSample();
+  const garment = inventoryGarment();
   body.append('garment_category', garmentCategory());
-  body.append('desc', sample?.name || { tops: 'top', bottoms: 'bottom', 'one-pieces': 'dress or one-piece' }[garmentCategory()]);
+  const description = garment?.name || { tops: 'top', bottoms: 'bottom', 'one-pieces': 'dress or one-piece' }[garmentCategory()];
+  body.append('desc', description.slice(0, 160));
   const photo = $('ph').files[0];
   body.append('photo', photo);
   const garmentFile = $('gf').files[0];
-  if (sample) body.append('sku_id', $('garmentSource').value);
+  if (garment) body.append('sku_id', garment.sku);
   else if (garmentFile) body.append('garment', garmentFile);
   else return;
   $('rn').disabled = true;
