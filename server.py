@@ -20,7 +20,7 @@ from fastapi.staticfiles import StaticFiles
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 
-from tryon_model import ROOT, check_photo, normalize_photo, read_image, remote_backend, run_model
+from tryon_model import ROOT, check_photo, normalize_photo, restore_to_original, read_image, remote_backend, run_model
 from recommender import model, predict
 from setup_models import ensure_models
 from pydantic import BaseModel, Field
@@ -377,7 +377,8 @@ def tryon(session: str = Form(...), age: int = Form(0), consent_photo: str = For
         except (OSError, ValueError, Image.DecompressionBombError):
             return error("Please retake the photo and upload a JPG, PNG or WebP under 12 MB.",
                          422, rejected_before_render=True)
-        person, adjustments = normalize_photo(person)
+        original_photo = person
+        person, adjustments, ops = normalize_photo(person)
         try:
             retake = check_photo(person, garment_category)
         except (RuntimeError, ValueError, OSError) as exc:
@@ -417,6 +418,8 @@ def tryon(session: str = Form(...), age: int = Form(0), consent_photo: str = For
         folder = TMP / session
         folder.mkdir(exist_ok=True, mode=0o700)
         output, placeholder_reason = run_model(person, item, desc, folder, garment_category)
+        if ops and placeholder_reason is None:
+            output = restore_to_original(original_photo, person, output, ops)
         mock = placeholder_reason is not None
         # Explicit mock mode does not contact a provider. Other attempts may have incurred a charge.
         cost = 0 if placeholder_reason == "mock_mode" else None

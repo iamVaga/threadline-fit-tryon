@@ -70,7 +70,7 @@ def normalize_photo(image):
     Fixes sideways/upside-down photos, a tilted body, a wide frame, and a person touching the frame
     edge. If no person is found the image is returned unchanged so check_photo can explain why.
     """
-    changes = []
+    changes, ops = [], []
     try:
         pose = detect_pose(image)
         # Wrong orientation: try the three other rotations and keep the most upright reading.
@@ -82,16 +82,18 @@ def normalize_photo(image):
                 if _upright_score(candidate) > best[0] + 0.05:
                     best = (_upright_score(candidate), angle, turned, candidate)
             if best[1]:
+                ops.append(("rotate", best[1], image.size))
                 image, pose = best[2], best[3]
                 changes.append("rotated")
         if not pose:
-            return image, changes
+            return image, changes, ops
         # Tilted body: rotate so the shoulder-to-hip axis is vertical.
         w, h = image.size
         mid = lambda a, b: ((pose[a].x + pose[b].x) / 2 * w, (pose[a].y + pose[b].y) / 2 * h)
         (sx, sy), (hx, hy) = mid(11, 12), mid(23, 24)
         tilt = math.degrees(math.atan2(hx - sx, hy - sy))
         if 2.5 < abs(tilt) <= 35:
+            ops.append(("rotate", -tilt, image.size))
             image = image.rotate(-tilt, expand=True, resample=Image.BICUBIC, fillcolor=_border_colour(image))
             pose = detect_pose(image) or pose
             changes.append("straightened")
@@ -103,6 +105,7 @@ def normalize_photo(image):
             crop_w = min(w, h * 0.75)
             if (max(xs) - min(xs)) * w <= crop_w * 0.95:
                 x0 = int(min(max(0, cx - crop_w / 2), w - crop_w))
+                ops.append(("crop", x0, (w, h)))
                 image = image.crop((x0, 0, int(x0 + crop_w), h))
                 pose = detect_pose(image) or pose
                 changes.append("cropped")
@@ -116,13 +119,46 @@ def normalize_photo(image):
         pad_bottom = max(0, int(body * 0.06 - (h - bottom))) \
             if min(pose[i].visibility for i in (29, 30, 31, 32)) >= 0.5 else 0
         if pad_top or pad_bottom:
+            ops.append(("pad", pad_top, pad_bottom))
             canvas = Image.new("RGB", (w, h + pad_top + pad_bottom), _border_colour(image))
             canvas.paste(image, (0, pad_top))
             image = canvas
             changes.append("added margin")
     except Exception:
-        return image, changes
-    return image, changes
+        return image, changes, ops
+    return image, changes, ops
+
+
+def restore_to_original(original, adjusted, output, ops):
+    """Map a try-on result made on the adjusted photo back onto the user's untouched original.
+
+    Only pixels the model changed are copied, so everything else stays the user's own pixels.
+    """
+    if not ops:
+        return output
+    mask = ImageChops.difference(adjusted.convert("RGB"), output.convert("RGB")).convert("L").point(
+        lambda v: 255 if v > 0 else 0)
+    image = output.convert("RGB")
+    for op in reversed(ops):
+        if op[0] == "pad":
+            box = (0, op[1], image.width, image.height - op[2])
+            image, mask = image.crop(box), mask.crop(box)
+        elif op[0] == "crop":
+            size = op[2]
+            full, full_mask = Image.new("RGB", size), Image.new("L", size)
+            full.paste(image, (op[1], 0))
+            full_mask.paste(mask, (op[1], 0))
+            image, mask = full, full_mask
+        else:  # rotate: undo with the opposite angle, then trim the expanded canvas back to size
+            size = op[2]
+            image = image.rotate(-op[1], expand=True, resample=Image.BICUBIC)
+            mask = mask.rotate(-op[1], expand=True, resample=Image.BILINEAR)
+            left, top = (image.width - size[0]) // 2, (image.height - size[1]) // 2
+            box = (left, top, left + size[0], top + size[1])
+            image, mask = image.crop(box), mask.crop(box)
+    if image.size != original.size:
+        return output
+    return composite_preserving_source(original, image, mask.point(lambda v: 255 if v >= 128 else 0))
 
 
 def check_photo(image, category="one-pieces"):
