@@ -187,4 +187,5 @@ def test_chart_evidence_and_all_catalogue_categories(client):
     assert all(type(x["chart_unreliable"]) is bool for group in brands.values() for x in group.values())
     lane=brands["Women · Kurtas"]["Chandni Lane"]
     assert lane["chart_n"]>=15 and lane["gap"] is not None and lane["chart_unreliable"]
-    assert client.get("/api/catalog").json()[0]["sku_id"].startswith("TL-")
+    catalogue=client.get("/api/catalog").json()
+    assert catalogue and all(item["variants"][0].get("image") and item["category_label"] for item in catalogue)

@@ -1,6 +1,7 @@
 """FitCheck photo validation and model adapters."""
 import base64
 import io
+import math
 import os
 import time
 from pathlib import Path
@@ -32,6 +33,96 @@ def read_image(stream):
 
 def mp_image(image):
     return mp.Image(image_format=mp.ImageFormat.SRGB, data=np.asarray(image))
+
+
+def detect_pose(image):
+    """First pose's landmarks for a (reduced) copy of the image, or None."""
+    reduced = image.copy()
+    reduced.thumbnail((960, 1280))
+    options = mp.tasks.vision.PoseLandmarkerOptions(
+        base_options=mp.tasks.BaseOptions(model_asset_path=str(POSE_MODEL)),
+        num_poses=1, min_pose_detection_confidence=0.4)
+    with mp.tasks.vision.PoseLandmarker.create_from_options(options) as detector:
+        poses = detector.detect(mp_image(reduced)).pose_landmarks
+    return poses[0] if poses else None
+
+
+def _upright_score(pose):
+    """How plausibly the person stands head-up: shoulders above hips above ankles, all visible."""
+    if not pose:
+        return -1.0
+    mid = lambda a, b: (pose[a].y + pose[b].y) / 2
+    ordered = pose[0].y < mid(11, 12) < mid(23, 24) < mid(27, 28)
+    return sum(pose[i].visibility for i in (0, 11, 12, 23, 24, 27, 28)) / 7 * (1 if ordered else 0.2)
+
+
+def _border_colour(image):
+    small = image.resize((32, 32))
+    px = np.asarray(small).reshape(-1, 3)
+    edge = np.concatenate([np.asarray(small)[0], np.asarray(small)[-1],
+                           np.asarray(small)[:, 0], np.asarray(small)[:, -1]])
+    return tuple(int(v) for v in np.median(edge, axis=0)) if len(px) else (235, 235, 235)
+
+
+def normalize_photo(image):
+    """Straighten and frame a recognisable person photo. Returns (image, list of adjustments).
+
+    Fixes sideways/upside-down photos, a tilted body, a wide frame, and a person touching the frame
+    edge. If no person is found the image is returned unchanged so check_photo can explain why.
+    """
+    changes = []
+    try:
+        pose = detect_pose(image)
+        # Wrong orientation: try the three other rotations and keep the most upright reading.
+        if _upright_score(pose) < 0.45 or image.height < image.width * 0.9:
+            best = (_upright_score(pose), 0, image, pose)
+            for angle in (90, 270, 180):
+                turned = image.rotate(angle, expand=True)
+                candidate = detect_pose(turned)
+                if _upright_score(candidate) > best[0] + 0.05:
+                    best = (_upright_score(candidate), angle, turned, candidate)
+            if best[1]:
+                image, pose = best[2], best[3]
+                changes.append("rotated")
+        if not pose:
+            return image, changes
+        # Tilted body: rotate so the shoulder-to-hip axis is vertical.
+        w, h = image.size
+        mid = lambda a, b: ((pose[a].x + pose[b].x) / 2 * w, (pose[a].y + pose[b].y) / 2 * h)
+        (sx, sy), (hx, hy) = mid(11, 12), mid(23, 24)
+        tilt = math.degrees(math.atan2(hx - sx, hy - sy))
+        if 2.5 < abs(tilt) <= 35:
+            image = image.rotate(-tilt, expand=True, resample=Image.BICUBIC, fillcolor=_border_colour(image))
+            pose = detect_pose(image) or pose
+            changes.append("straightened")
+        w, h = image.size
+        # Wide frame: crop to a portrait window centred on the person.
+        if w > h * 0.9:
+            xs = [p.x for p in pose]
+            cx = (min(xs) + max(xs)) / 2 * w
+            crop_w = min(w, h * 0.75)
+            if (max(xs) - min(xs)) * w <= crop_w * 0.95:
+                x0 = int(min(max(0, cx - crop_w / 2), w - crop_w))
+                image = image.crop((x0, 0, int(x0 + crop_w), h))
+                pose = detect_pose(image) or pose
+                changes.append("cropped")
+        # Person touching the frame edge: add a margin so head and feet have room.
+        w, h = image.size
+        top = min(p.y for p in (pose[0], pose[2], pose[5])) * h
+        bottom = max(pose[i].y for i in (29, 30, 31, 32)) * h
+        body = max(bottom - top, 1)
+        # The nose sits below the crown, so leave generous room above it.
+        pad_top = max(0, int(body * 0.18 - top)) if pose[0].visibility >= 0.5 else 0
+        pad_bottom = max(0, int(body * 0.06 - (h - bottom))) \
+            if min(pose[i].visibility for i in (29, 30, 31, 32)) >= 0.5 else 0
+        if pad_top or pad_bottom:
+            canvas = Image.new("RGB", (w, h + pad_top + pad_bottom), _border_colour(image))
+            canvas.paste(image, (0, pad_top))
+            image = canvas
+            changes.append("added margin")
+    except Exception:
+        return image, changes
+    return image, changes
 
 
 def check_photo(image):

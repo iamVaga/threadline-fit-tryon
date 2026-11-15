@@ -888,7 +888,7 @@ $('rn').onclick = async () => {
       canvas.getContext('2d').drawImage(image, 0, 0);
       for (const id of ['cv', 'lb', 'note']) $(id).classList.remove('hid');
       $('preview').classList.remove('hid');
-      if (!result.mock) showComparison(photo, requestGeneration);
+      if (!result.mock && !(result.adjusted || []).length) showComparison(photo, requestGeneration);
       const reason = {
         mock_mode: 'Demo mode is active.',
         model_unavailable: 'The try-on model is unavailable.',
@@ -897,7 +897,7 @@ $('rn').onclick = async () => {
       }[result.placeholder_reason];
       $('msg').textContent = result.mock
         ? `${reason || 'Try-on is unavailable.'} PLACEHOLDER · original photo. Preview ${result.renders_used} of 3.`
-        : `Done in ${result.latency_s}s. Preview ${result.renders_used} of 3.`;
+        : `Done in ${result.latency_s}s. Preview ${result.renders_used} of 3.` + ((result.adjusted || []).length ? ' We adjusted your photo (' + result.adjusted.join(', ') + ') so the fit lines up.' : '');
       expiry = setTimeout(() => {
         clearPreview();
         $('ph').value = '';

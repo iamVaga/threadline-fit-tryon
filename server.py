@@ -20,7 +20,7 @@ from fastapi.staticfiles import StaticFiles
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 
-from tryon_model import ROOT, check_photo, read_image, remote_backend, run_model
+from tryon_model import ROOT, check_photo, normalize_photo, read_image, remote_backend, run_model
 from recommender import model, predict
 from setup_models import ensure_models
 from pydantic import BaseModel, Field
@@ -377,6 +377,7 @@ def tryon(session: str = Form(...), age: int = Form(0), consent_photo: str = For
         except (OSError, ValueError, Image.DecompressionBombError):
             return error("Please retake the photo and upload a JPG, PNG or WebP under 12 MB.",
                          422, rejected_before_render=True)
+        person, adjustments = normalize_photo(person)
         try:
             retake = check_photo(person)
         except (RuntimeError, ValueError, OSError) as exc:
@@ -435,7 +436,7 @@ def tryon(session: str = Form(...), age: int = Form(0), consent_photo: str = For
         log(elapsed, cost, mock)
         return JSONResponse({
             "image": "data:image/png;base64," + base64.b64encode(preview).decode("ascii"),
-            "mock": mock, "placeholder_reason": placeholder_reason, "label": LABEL,
+            "adjusted": adjustments, "mock": mock, "placeholder_reason": placeholder_reason, "label": LABEL,
             "latency_s": elapsed, "cost_inr": cost, "renders_used": count + 1,
         }, headers=NO_STORE)
 
