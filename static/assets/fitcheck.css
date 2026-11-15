@@ -50,7 +50,6 @@ main { min-height: 65vh; padding-block: 24px 40px; }
 .workspace-head h1 span { white-space: nowrap; }
 .workspace-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .workspace-actions .btn { min-height: 48px; }
-.workspace-actions .btn[aria-expanded=true] { background: var(--accent); border-color: var(--accent); color: white; }
 .inventory-panel { border-block: 1px solid var(--border); margin-top: 13px; }
 .inventory-panel > summary { min-height: 48px; color: var(--ink); }
 .inventory-panel[open] { padding-bottom: 16px; }
@@ -67,6 +66,9 @@ main { min-height: 65vh; padding-block: 24px 40px; }
 .btn:hover:not(:disabled), .copy:hover { background: var(--accent-dark); }
 .btn.s, .copy { background: transparent; border-color: var(--control); color: var(--ink); }
 .btn.s:hover:not(:disabled), .copy:hover { background: var(--wash); }
+.workspace-actions .btn[aria-expanded=true], .workspace-actions .btn[aria-expanded=true]:hover {
+  background: var(--accent); border-color: var(--accent); color: white;
+}
 .btn:disabled { background: var(--wash); border-color: var(--border); color: var(--muted); }
 .text-button {
   display: inline-flex; gap: 8px; align-items: center; min-height: 44px; border: 0; padding: 0; background: transparent;
