@@ -2,15 +2,16 @@ const $ = id => document.getElementById(id);
 const visible = (id, show) => $(id).classList.toggle('hid', !show);
 const letterSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'];
 const jeansSizes = ['24', '26', '28', '30', '32', '34', '36', '38', '40', '42'];
-const views = ['inventoryStep', 'sizeStep', 'tryStep', 'fit', 'res'];
+const views = ['workspace', 'fit', 'res'];
 const navigation = document.querySelectorAll('[data-view]');
 const inr = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 });
 const money = amount => inr.format(Number(amount));
-let activeView = 'inventoryStep';
+let activeView = 'workspace';
+let activeTool;
 let selectedGarment;
 let inventory = [];
 let inventoryRequest;
-const inventoryPageSize = 12;
+const inventoryPageSize = 8;
 let inventoryLimit = inventoryPageSize;
 let brands = [];
 let fitProducts = [];
@@ -18,31 +19,60 @@ let fitCatalogueRequest;
 let recommendRequest = 0;
 
 function showView(view) {
-  if (view === activeView) {
-    if (view === 'inventoryStep') loadInventory();
-    return;
-  }
-  if (activeView === 'tryStep') stopCamera();
+  if (activeView === view) return;
+  if (activeView === 'workspace') stopCamera();
   activeView = view;
   for (const id of views) visible(id, id === view);
   for (const button of navigation) {
-    const selected = button.dataset.view === view;
-    button.classList.toggle('on', selected);
-    button.setAttribute('aria-pressed', String(selected));
+    if (button.hasAttribute('aria-pressed')) {
+      button.setAttribute('aria-pressed', String(button.dataset.view === view));
+    }
   }
-  renderSelection();
-  if (view === 'inventoryStep') loadInventory();
-  if (view === 'sizeStep') loadFitProducts();
-  if (view === 'tryStep') {
-    loadPhotoConfig();
-    loadGallery();
-  }
-  if (view === 'fit' || view === 'res') loadEvidence();
+  if (view !== 'workspace') loadEvidence();
   window.scrollTo(0, 0);
   $(view).focus({ preventScroll: true });
 }
 
+function renderWorkspace() {
+  const pickerOpen = $('inventoryStep').open;
+  const sizeOpen = activeTool === 'sizeStep' && !pickerOpen;
+  const tryOpen = activeTool === 'tryStep' && !pickerOpen;
+  visible('sizeStep', sizeOpen);
+  visible('tryStep', tryOpen);
+  $('selectedSize').setAttribute('aria-expanded', String(sizeOpen));
+  $('selectedTry').setAttribute('aria-expanded', String(tryOpen));
+  if (!tryOpen) stopCamera();
+}
+
+function openTool(tool) {
+  activeTool = tool;
+  $('inventoryStep').open = false;
+  renderWorkspace();
+  if (tool === 'sizeStep') loadFitProducts();
+  else {
+    loadPhotoConfig();
+    loadGallery();
+  }
+  $(tool).focus({ preventScroll: true });
+}
+
+function openInventory() {
+  $('inventoryStep').open = true;
+  loadInventory();
+  renderWorkspace();
+  focusSection($('inventoryStep').querySelector('summary'));
+}
+
 for (const button of navigation) button.onclick = () => showView(button.dataset.view);
+$('homeLink').onclick = event => {
+  if (activeView === 'workspace') return;
+  event.preventDefault();
+  showView('workspace');
+};
+$('inventoryStep').addEventListener('toggle', () => {
+  if ($('inventoryStep').open) loadInventory();
+  renderWorkspace();
+});
 
 function focusSection(element) {
   element.focus({ preventScroll: true });
@@ -61,8 +91,7 @@ function resetSizeForm(sku) {
 
 function renderSelection() {
   const item = selectedGarment;
-  const inTool = ['inventoryStep', 'sizeStep', 'tryStep'].includes(activeView);
-  visible('selection', !!item && inTool);
+  visible('selection', !!item);
   visible('fitUnavailable', !!item && !item.hasFit);
   if (!item) return;
   $('selectionName').textContent = item.name;
@@ -71,8 +100,6 @@ function renderSelection() {
   if (item.image) thumbnail.src = item.image;
   else thumbnail.removeAttribute('src');
   visible('selectionPhoto', !!item.image);
-  visible('selectionActions', activeView === 'inventoryStep');
-  visible('selectedSize', item.hasFit);
 }
 
 function setGarment(item) {
@@ -137,7 +164,7 @@ function loadInventory() {
     renderInventory();
   }).catch(() => {
     inventoryRequest = null;
-    $('inventoryStatus').textContent = 'Inventory could not load. Reopen Garments to retry, or upload a garment in Virtual Try-On.';
+    $('inventoryStatus').textContent = 'Inventory could not load. Reopen Choose a garment to retry, or upload a garment photo.';
   });
 }
 
@@ -173,6 +200,8 @@ function renderInventory() {
         setGarment(item);
         resetSizeForm(item.hasFit ? item.sku : '');
       }
+      $('inventoryStep').open = false;
+      renderWorkspace();
       focusSection($('selection'));
     };
     row.append(button);
@@ -193,13 +222,10 @@ $('inventoryMore').onclick = () => {
   renderInventory();
   $('inventoryGrid').children[previous]?.querySelector('button').focus();
 };
-$('changeGarment').onclick = () => {
-  if (activeView === 'inventoryStep') focusSection($('inventoryStep'));
-  else showView('inventoryStep');
-};
-$('selectedTry').onclick = () => showView('tryStep');
-$('selectedSize').onclick = () => showView('sizeStep');
-$('tryPickGarment').onclick = () => showView('inventoryStep');
+$('changeGarment').onclick = openInventory;
+$('tryPickGarment').onclick = openInventory;
+$('selectedTry').onclick = () => openTool('tryStep');
+$('selectedSize').onclick = () => openTool('sizeStep');
 
 function loadFitProducts() {
   if (fitCatalogueRequest) return;
@@ -332,7 +358,7 @@ async function rec(lookup = false) {
       : `${elapsed} ms total.`;
     $('recommendStatus').textContent = '';
     visible('out', true);
-    if (activeView === 'sizeStep') focusSection($('out'));
+    if (activeView === 'workspace' && !$('sizeStep').classList.contains('hid')) focusSection($('out'));
     if (!lookup && result.sku_id !== selectedGarment?.sku) {
       const fitItem = fitProducts.find(item => item.sku === result.sku_id);
       if (fitItem) setGarment(fromFitCatalogue(fitItem));

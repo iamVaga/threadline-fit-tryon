@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f8f7f2">
-  <title>FitCheck | Garments, Size Finder and Virtual Try-On</title>
+  <title>FitCheck | Size Finder &amp; Virtual Try-On</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Instrument+Serif&amp;display=swap" rel="stylesheet">
@@ -14,15 +14,15 @@
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="site-header">
   <div class="header-inner">
-    <a class="wordmark" href="/" aria-label="FitCheck home">FitCheck<span aria-hidden="true">.</span></a>
-    <nav class="main-nav" aria-label="FitCheck tools">
-      <button type="button" class="on" data-view="inventoryStep" aria-pressed="true" aria-controls="inventoryStep">Garments</button>
-      <button type="button" data-view="sizeStep" aria-pressed="false" aria-controls="sizeStep">Size Finder</button>
-      <button type="button" data-view="tryStep" aria-pressed="false" aria-controls="tryStep">Virtual Try-On</button>
-    </nav>
+    <a class="wordmark" id="homeLink" href="/" aria-label="FitCheck home">FitCheck<span aria-hidden="true">.</span></a>
   </div>
 </header>
 <main id="main" tabindex="-1">
+  <section class="workspace" id="workspace" tabindex="-1" aria-labelledby="workspaceTitle">
+    <header class="workspace-head">
+      <h1 id="workspaceTitle">Size Finder &amp; <span>Virtual Try-On</span></h1>
+      <p>Choose a garment, then find your size or see it on you.</p>
+    </header>
   <section class="selection hid" id="selection" aria-labelledby="selectionTitle" tabindex="-1">
     <img id="selectionPhoto" class="selection-photo hid" alt="">
     <div class="selection-detail">
@@ -30,18 +30,16 @@
       <p id="selectionName"></p>
       <p id="selectionMeta" class="mu"></p>
     </div>
-    <button type="button" class="text-button" id="changeGarment">Change</button>
-    <div class="selection-actions" id="selectionActions">
-      <button type="button" class="btn" id="selectedTry">See it on me</button>
-      <button type="button" class="btn s" id="selectedSize">Find my size</button>
-    </div>
+    <button type="button" class="text-button" id="changeGarment" aria-controls="inventoryStep">Change</button>
   </section>
 
-  <section class="inventory-panel" id="inventoryStep" tabindex="-1" aria-labelledby="inventoryTitle">
-    <div class="panel-head">
-      <h1 id="inventoryTitle">Choose a garment</h1>
-      <p>Pick an item from the inventory to see it on you.</p>
-    </div>
+  <div class="workspace-actions" role="group" aria-label="Fit tools">
+    <button type="button" class="btn s" id="selectedSize" aria-expanded="false" aria-controls="sizeStep">Find my size</button>
+    <button type="button" class="btn s" id="selectedTry" aria-expanded="false" aria-controls="tryStep">See it on me</button>
+  </div>
+
+  <details class="inventory-panel" id="inventoryStep" open>
+    <summary>Choose a garment</summary>
     <div class="fields inventory-fields">
       <div><label for="inventoryCategory">Category</label><select id="inventoryCategory"><option value="">All categories</option></select></div>
       <div><label for="inventorySearch">Search inventory</label><input id="inventorySearch" type="search" enterkeyhint="search" placeholder="e.g. kurta or T-shirt"></div>
@@ -49,10 +47,10 @@
     <p id="inventoryStatus" class="mu inventory-status" role="status">Loading garments…</p>
     <ul id="inventoryGrid" class="inventory-grid" aria-label="Inventory garments"></ul>
     <button class="btn s hid" id="inventoryMore" type="button">Show more garments</button>
-  </section>
+  </details>
 
   <section class="tool-panel hid" id="sizeStep" tabindex="-1" aria-labelledby="sizeTitle">
- <div class="panel-head"><h1 id="sizeTitle">Find my size</h1><p>Get a size recommendation for a garment in the fit catalogue.</p><p id="fitUnavailable" class="mu hid">This inventory item has no size data. Choose a garment below for size advice.</p></div>
+ <div class="panel-head"><h2 id="sizeTitle">Find my size</h2><p>Get a size recommendation for a garment in the fit catalogue.</p><p id="fitUnavailable" class="mu hid">This inventory item has no size data. Choose a garment below for size advice.</p></div>
  <div class="fit-picker" id="fitPicker">
    <div class="fields">
      <div><label for="fitCategory">Category</label><select id="fitCategory"><option value="">All categories</option></select></div>
@@ -105,7 +103,7 @@
 </section>
 
   <section class="tool-panel hid" id="tryStep" tabindex="-1" aria-labelledby="tryTitle">
- <div class="panel-head"><h1 id="tryTitle">Virtual try-on</h1><p>See a simulated preview using your own photo. For adults 18+.</p></div>
+ <div class="panel-head"><h2 id="tryTitle">Virtual try-on</h2><p>See a simulated preview using your own photo. For adults 18+.</p></div>
  <div class="garment-picker">
    <label for="garmentSource">Garment source</label>
    <select id="garmentSource">
@@ -152,14 +150,19 @@
  </div>
  <details id="sampleGallery" class="gallery hid"><summary>Sample gallery</summary><p class="mu" id="galleryStatus" role="status">Loading samples…</p><div id="galleryItems" class="gallery-grid"></div></details>
   </section>
+  </section>
 
 <section id="fit" class="evidence hid" tabindex="-1" aria-label="Fit and Returns">
+ <button type="button" class="text-button evidence-back" data-view="workspace">Back to FitCheck</button>
  <div class="card"><h2>Kurta brands by size-return rate</h2><p class="mu">Jan–Sep 2026 training sample. Direction comes from the learned size offset. Chart gap compares kept sizes with published charts on consented orders. The flag uses the chart gap and conflicting return evidence.</p>
  <div id="fitSummary" class="summary"></div><div class="wrap" tabindex="0" role="region" aria-label="Kurta brand data, scrollable table"><table id="bt"></table></div></div>
  <div class="card"><h2>Draft messages to brands</h2><p class="mu">Aggregated evidence only. No individual data is shared.</p><div id="ms" class="messages"></div></div>
 </section>
 
-<section id="res" class="evidence hid" tabindex="-1" aria-label="Results"><div id="rb"></div></section>
+<section id="res" class="evidence hid" tabindex="-1" aria-label="Results">
+ <button type="button" class="text-button evidence-back" data-view="workspace">Back to FitCheck</button>
+ <div id="rb"></div>
+</section>
 </main>
 <footer class="site-footer">
   <div class="footer-inner">
