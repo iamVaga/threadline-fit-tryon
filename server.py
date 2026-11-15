@@ -413,9 +413,9 @@ def tryon(session: str = Form(...), age: int = Form(0), consent_photo: str = For
                 path = GARMENTS / garment_name
                 item = prepared_garment(path, path.stat().st_mtime_ns).copy()
             else:
-                return error("Please choose or upload a kurta image.", 422, rejected_before_render=True)
+                return error("Choose a sample or upload a garment photo.", 422, rejected_before_render=True)
         except (OSError, ValueError, Image.DecompressionBombError):
-            return error("Please upload a readable kurta JPG, PNG or WebP under 12 MB.",
+            return error("Upload a readable garment JPG, PNG or WebP under 12 MB.",
                          422, rejected_before_render=True)
 
         try:

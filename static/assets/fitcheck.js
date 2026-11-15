@@ -2,224 +2,52 @@ const $ = id => document.getElementById(id);
 const visible = (id, show) => $(id).classList.toggle('hid', !show);
 const letterSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'];
 const jeansSizes = ['24', '26', '28', '30', '32', '34', '36', '38', '40', '42'];
-const pageSize = 12;
-const mainTabs = [...document.querySelectorAll('nav [data-t]')];
-const featuredImages = ['in-1167a4f332.jpg', 'in-b5e04df86a.jpg', 'fs-15.png', 'in-25b7a65354.jpg'];
-const cur = { p: null, c: 0 };
+const views = ['sizeStep', 'tryStep', 'fit', 'res'];
+const navigation = document.querySelectorAll('[data-view]');
+const inr = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 });
+const money = amount => inr.format(Number(amount));
+let activeView = 'sizeStep';
 let brands = [];
-let catalogue = [];
 let fitProducts = [];
 let fitCatalogueRequest;
-let catFilter = '';
-let visibleProducts = pageSize;
-let lastCardId;
-let activeView = 'shop';
 let recommendRequest = 0;
 
 function showView(view) {
-  if (activeView !== view) stopCamera();
+  if (view === activeView) return;
+  if (activeView === 'tryStep') stopCamera();
   activeView = view;
-  const navView = view === 'workspace' ? (cur.p ? 'shop' : 'size') : view;
-  mainTabs.forEach(tab => {
-    tab.classList.toggle('on', tab.dataset.t === navView);
-    tab.setAttribute('aria-pressed', String(tab.dataset.t === navView));
-  });
-  for (const section of ['shop', 'workspace', 'fit', 'res']) visible(section, view === section);
+  for (const id of views) visible(id, id === view);
+  for (const button of navigation) {
+    const selected = button.dataset.view === view;
+    button.classList.toggle('on', selected);
+    button.setAttribute('aria-pressed', String(selected));
+  }
+  if (view === 'sizeStep') loadFitProducts();
+  if (view === 'tryStep') {
+    loadPhotoConfig();
+    loadGallery();
+  }
+  if (view === 'fit' || view === 'res') loadEvidence();
+  window.scrollTo(0, 0);
+  $(view).focus({ preventScroll: true });
 }
+
+for (const button of navigation) button.onclick = () => showView(button.dataset.view);
 
 function focusSection(element) {
   element.focus({ preventScroll: true });
-  element.scrollIntoView({ block: 'start' });
+  element.scrollIntoView({ block: 'nearest' });
 }
 
-function openCollection() {
-  showView('shop');
-  const card = [...$('catalog').children].find(item => item.dataset.id === lastCardId);
-  focusSection(card || $('collectionTitle'));
-}
-
-function showPanel(panel, focus = true) {
-  if (panel !== 'try') stopCamera();
-  visible('sizeStep', panel === 'size');
-  visible('tryStep', panel === 'try');
-  for (const [id, name] of [['showSize', 'size'], ['showTryOn', 'try']]) {
-    $(id).setAttribute('aria-expanded', String(panel === name));
-  }
-  if (focus && panel) focusSection($(panel === 'size' ? 'sizeStep' : 'tryStep'));
-}
-
-function resetSizeForm(sku = '') {
+function resetSizeForm(sku) {
   recommendRequest++;
   $('skuLookup').value = sku;
   $('recommendStatus').textContent = '';
   $('technicalTiming').textContent = '';
   visible('out', false);
   visible('fitChoice', false);
+  visible('fitInputs', !!sku.trim());
   updateUsualSizes();
-}
-
-function openSizeFinder() {
-  cur.p = null;
-  resetSizeForm();
-  visible('pickedImage', false);
-  visible('productMeta', false);
-  $('workspace').classList.add('standalone');
-  $('sizeIntro').textContent = 'Choose a garment to get a size recommendation.';
-  visible('fitPicker', true);
-  $('fitSearch').value = '';
-  $('fitCategory').value = '';
-  renderFitMatches();
-  loadFitProducts();
-  $('testDetails').hidden = false;
-  $('trySampleCase').hidden = false;
-  $('testDetails').open = false;
-  $('skuField').open = false;
-  visible('skuField', true);
-  showView('workspace');
-  showPanel('size');
-}
-
-mainTabs.forEach(button => {
-  button.onclick = () => {
-    if (button.dataset.t === 'size') {
-      openSizeFinder();
-    } else {
-      showView(button.dataset.t);
-      window.scrollTo(0, 0);
-    }
-  };
-});
-$('backToShop').onclick = openCollection;
-$('showTryOn').onclick = () => showPanel('try');
-$('showSize').onclick = () => {
-  if (cur.p?.free) {
-    openSizeFinder();
-    runSampleCase();
-  } else {
-    showPanel('size');
-  }
-};
-
-const priceFormat = (currency = 'INR') => new Intl.NumberFormat(currency === 'USD' ? 'en-US' : 'en-IN', {
-  style: 'currency', currency, maximumFractionDigits: 2, minimumFractionDigits: 0,
-});
-function money(amount, currency) {
-  return amount == null ? '' : priceFormat(currency).format(Number(amount));
-}
-
-function productPhoto(path, alt = '') {
-  const image = document.createElement('img');
-  image.src = path;
-  image.alt = alt;
-  image.decoding = 'async';
-  return image;
-}
-
-function renderCatalog() {
-  const q = $('cs').value.trim().toLowerCase(), br = $('cbrand').value, so = $('csort').value;
-  const list = catalogue.filter(p => (!br || p.brand === br) && (!catFilter || p.cat === catFilter) &&
-    (!q || [p.name, p.brand, p.cat, p.id, ...p.cols.map(col => col.name)].join(' ').toLowerCase().includes(q)));
-  if (so) list.sort((a, b) => {
-    if (a.price == null) return b.price == null ? 0 : 1;
-    if (b.price == null) return -1;
-    return a.currency.localeCompare(b.currency) || (so === 'lo' ? a.price - b.price : b.price - a.price);
-  });
-  $('catalog').replaceChildren(...list.slice(0, visibleProducts).map((p, index) => {
-    const card = document.createElement('button');
-    card.type = 'button';
-    card.className = 'cat-card';
-    card.dataset.id = p.id;
-    const media = document.createElement('span');
-    media.className = 'ct';
-    const image = productPhoto(p.cols[0].image);
-    if (index >= 4) image.loading = 'lazy';
-    media.append(image);
-    const name = document.createElement('span');
-    name.className = 'nm';
-    name.textContent = p.name;
-    const brand = document.createElement('span');
-    brand.className = 'br';
-    brand.textContent = p.brand === 'Indo Fashion' ? p.cat : p.brand;
-    const price = document.createElement('span');
-    price.className = 'pr';
-    price.textContent = money(p.price, p.currency);
-    card.append(media, brand, name);
-    if (price.textContent) card.append(price);
-    card.onclick = () => selectProduct(p);
-    return card;
-  }));
-  $('catNote').textContent = list.length === 1 ? '1 garment' : list.length + ' garments';
-  visible('catalogMore', list.length > visibleProducts);
-  visible('catEmpty', list.length === 0);
-}
-
-function renderPicked() {
-  const { p, c } = cur;
-  const v = p.cols[c];
-  $('swSvg').replaceChildren(productPhoto(v.image, p.name));
-  $('swName').textContent = p.cols.length > 1 ? v.name : '';
-  $('pn').textContent = p.name;
-  $('productBrand').textContent = p.brand;
-  $('pmeta').textContent = [p.cat, money(p.price, p.currency)].filter(Boolean).join(' · ');
-  visible('productColours', p.cols.length > 1);
-  const topPhoto = p.gcat === 'tops';
-  const crop = topPhoto ? 'Keep your head to hips in frame.' : 'Keep your head to feet in frame.';
-  $('photoGuide').textContent = `Use a clear photo of one person. ${crop}`;
-  $('cameraGuide').textContent = `${crop} Use even lighting and a plain background.`;
-  $('colourChips').replaceChildren(...p.cols.map(({name, hex}, index) => {
-    const chip = document.createElement('button');
-    chip.type = 'button';
-    chip.style.setProperty('--chip', hex);
-    chip.setAttribute('aria-label', name);
-    chip.setAttribute('aria-pressed', String(index === c));
-    chip.title = name;
-    chip.onclick = () => {
-      cur.c = index;
-      $('gf').value = '';
-      resetSizeForm(cur.p.free ? '' : cur.p.cols[index].sku);
-      renderPicked();
-      $('colourChips').children[index].focus();
-      clearPreview();
-      sync();
-    };
-    return chip;
-  }));
-}
-
-function selectProduct(p) {
-  cur.p = p;
-  cur.c = 0;
-  lastCardId = p.id;
-  resetSizeForm(p.free ? '' : p.cols[0].sku);
-  $('gf').value = '';
-  $('msg').textContent = '';
-  $('garmentDetails').open = false;
-  $('garmentDetails').querySelector('summary').textContent = 'Use a different garment photo';
-  clearPreview();
-  renderPicked();
-  visible('pickedImage', true);
-  visible('productMeta', true);
-  visible('sampleFitNotice', p.free);
-  visible('skuField', false);
-  visible('fitPicker', false);
-  $('testDetails').hidden = true;
-  $('trySampleCase').hidden = true;
-  $('sizeIntro').textContent = 'Tell us what size you usually wear and how you like it to fit.';
-  $('showSize').textContent = p.free ? 'Try a size demo' : 'Find my size';
-  $('workspace').classList.remove('standalone');
-  showView('workspace');
-  showPanel(null);
-  focusSection($('pn'));
-  sync();
-}
-
-function setCategory(category = '') {
-  catFilter = category;
-  visibleProducts = pageSize;
-  $('catChips').querySelectorAll('button').forEach(chip => {
-    chip.setAttribute('aria-pressed', String(chip.dataset.category === category));
-  });
-  renderCatalog();
 }
 
 function loadFitProducts() {
@@ -232,6 +60,8 @@ function loadFitProducts() {
     fitProducts = items;
     const categories = [...new Set(items.map(item => item.category))].sort();
     $('fitCategory').append(...categories.map(category => new Option(category)));
+    const brandNames = [...new Set(items.map(item => item.brand))].sort();
+    $('ub').append(...brandNames.map(name => new Option(name)));
     renderFitMatches();
     updateUsualSizes();
   }).catch(() => {
@@ -286,74 +116,12 @@ function updateUsualSizes() {
   if (sizes.includes(previous)) $('us').value = previous;
 }
 
-for (const id of ['cs', 'cbrand', 'csort']) $(id).oninput = () => {
-  visibleProducts = pageSize;
-  renderCatalog();
-};
-$('skuLookup').oninput = () => {
-  visible('fitChoice', false);
-  visible('out', false);
-  recommendRequest++;
-  updateUsualSizes();
-};
-$('catalogMore').onclick = () => {
-  const firstNewIndex = visibleProducts;
-  visibleProducts += pageSize;
-  renderCatalog();
-  $('catalog').children[firstNewIndex]?.focus();
-};
-$('clearFilters').onclick = () => {
-  for (const field of ['cs', 'cbrand', 'csort']) $(field).value = '';
-  setCategory();
-  $('cs').focus();
-};
-$('catalogFilters').addEventListener('keydown', event => {
-  if (event.key === 'Escape') {
-    $('catalogFilters').open = false;
-    $('catalogFilters').querySelector('summary').focus();
-  }
-});
-document.addEventListener('click', event => {
-  if (!$('catalogFilters').contains(event.target)) $('catalogFilters').open = false;
-});
-
-fetch('/api/catalog').then(response => {
-  if (!response.ok) throw new Error();
-  return response.json();
-}).then(items => {
-  catalogue = items.filter(item => item.variants.some(variant => variant.image)).map(item => ({
-    id: item.sku_id, brand: item.brand, name: item.name.trim(), price: item.price, currency: item.currency || 'INR',
-    cat: item.category_label || 'Kurtas', gcat: item.garment_category, free: !!item.free,
-    cols: item.variants.filter(v => v.image).map(v => ({ name: v.colour, hex: v.hex, image: v.image, sku: v.sku })),
-  }));
-  const rank = item => {
-    const index = featuredImages.indexOf(item.cols[0].image.split('/').pop());
-    return index === -1 ? featuredImages.length : index;
-  };
-  catalogue.sort((a, b) => rank(a) - rank(b));
-  const available = [...new Set(catalogue.map(item => item.brand))].sort();
-  $('cbrand').replaceChildren(new Option('All brands', ''), ...available.map(brand => new Option(brand)));
-  const cats = [...new Set(catalogue.map(item => item.cat))].sort();
-  $('catChips').replaceChildren(...['', ...cats].map(category => {
-    const chip = document.createElement('button');
-    chip.type = 'button';
-    chip.textContent = category || 'All';
-    chip.dataset.category = category;
-    chip.onclick = () => setCategory(category);
-    return chip;
-  }));
-  setCategory();
-  updateUsualSizes();
-}).catch(() => {
-  $('catNote').textContent = 'The collection is unavailable. You can still use the size finder.';
-});
-
+$('skuLookup').oninput = () => resetSizeForm($('skuLookup').value);
+loadFitProducts();
 function runSampleCase() {
   $('testLookup').value = 'FT-10026';
-  $('testDetails').open = true;
   rec(true);
 }
-$('heroDemo').onclick = () => { openSizeFinder(); runSampleCase(); };
 $('trySampleCase').onclick = runSampleCase;
 $('testLookup').addEventListener('keydown', event => {
   if (event.key === 'Enter') { event.preventDefault(); rec(true); }
@@ -414,9 +182,10 @@ async function rec(lookup = false) {
       : `${elapsed} ms total.`;
     $('recommendStatus').textContent = '';
     visible('out', true);
-    focusSection($('out'));
+    if (activeView === 'sizeStep') focusSection($('out'));
     if (lookup) {
       $('skuLookup').value = result.sku_id;
+      visible('fitInputs', true);
       updateUsualSizes();
     }
     if (lookup && result.needs_input) {
@@ -431,7 +200,7 @@ $('lookupCase').onclick = () => rec(true);
 // consent + photo
 let SID = crypto.randomUUID();
 let pendingRender = null, deleting = false, generation = 0, expiry = 0, photoExpiry = 0;
-let photoConfigLoaded = false, remoteBackend = null;
+let photoConfigLoaded = false, photoConfigFailed = false, remoteBackend = null;
 let toastTimer, progressTimer;
 let originalUrl;
 const stages = ['Checking your photo…', 'Preparing your preview…'];
@@ -550,28 +319,54 @@ async function checkClientPhoto(file) {
   }
   return '';
 }
-fetch('/api/gallery').then(response => {
-  if (!response.ok) throw new Error();
-  return response.json();
-}).then(entries => {
-  visible('sampleGallery', entries.length > 0);
-  $('galleryStatus').textContent = '';
-  for (const entry of entries) {
-    const figure = document.createElement('figure');
-    const img = document.createElement('img');
-    img.src = entry.image;
-    img.alt = entry.label;
-    img.loading = 'lazy';
-    const label = document.createElement('figcaption');
-    label.textContent = entry.case_id + ' · ' + entry.label;
-    figure.append(img,label);
-    $('galleryItems').append(figure);
-  }
-}).catch(() => { $('galleryStatus').textContent = 'The sample gallery could not load.'; });
+let galleryRequest;
+function loadGallery() {
+  if (galleryRequest) return;
+  galleryRequest = fetch('/api/gallery').then(response => {
+    if (!response.ok) throw new Error();
+    return response.json();
+  }).then(entries => {
+    visible('sampleGallery', entries.length > 0);
+    $('galleryStatus').textContent = '';
+    for (const entry of entries) {
+      const figure = document.createElement('figure');
+      const img = document.createElement('img');
+      img.src = entry.image;
+      img.alt = entry.label;
+      img.loading = 'lazy';
+      const label = document.createElement('figcaption');
+      label.textContent = entry.case_id + ' · ' + entry.label;
+      figure.append(img,label);
+      $('galleryItems').append(figure);
+    }
+  }).catch(() => { $('galleryStatus').textContent = 'The sample gallery could not load.'; });
+}
 const day = 24 * 60 * 60 * 1000;
 const adult = () => Number.isInteger(Number($('ag').value)) && Number($('ag').value) >= 18;
 let thumbFile = null, thumbUrl = null;
 
+const sampleGarments = {
+  'FS-18': { name: 'white T-shirt', category: 'tops' },
+  'DJ-180': { name: 'light dress', category: 'one-pieces' },
+};
+const activeSample = () => sampleGarments[$('garmentSource').value];
+const garmentCategory = () => activeSample()?.category || $('garmentType').value;
+
+function updateGarment() {
+  const crop = garmentCategory() === 'tops'
+    ? 'Keep your head to hips in frame.' : 'Keep your head to feet in frame.';
+  $('photoGuide').textContent = 'Use a clear photo of one person. ' + crop;
+  $('cameraGuide').textContent = crop + ' Use even lighting and a plain background.';
+  visible('garmentUpload', !activeSample());
+  $('msg').textContent = '';
+  clearPreview();
+  sync();
+}
+$('garmentSource').onchange = () => {
+  $('gf').value = '';
+  updateGarment();
+};
+$('garmentType').onchange = updateGarment;
 function sync() {
   const file = $('ph').files[0] || null;
   const photoConsented = photoConfigLoaded && adult() && $('c1').checked && !deleting;
@@ -583,10 +378,11 @@ function sync() {
     $('phThumb').classList.toggle('hid', !thumbFile);
   }
   const need = [];
-  if (!photoConfigLoaded) need.push('Loading photo consent…');
-  else if (!$('c1').checked || !adult()) need.push('Agree to photo processing and enter an age of 18 or older.');
-  else if (!file) need.push('Choose a photo or use your camera.');
-  else if (!$('gf').files[0] && !cur.p?.cols[cur.c]?.image) need.push('Add a garment photo to continue.');
+  if (photoConfigFailed) need.push('Reload the page to try the preview again.');
+  else if (!photoConfigLoaded) need.push('Loading photo consent…');
+  else if (!activeSample() && !$('gf').files[0]) need.push('Add a garment photo or choose a sample.');
+  else if (!file) need.push('Choose your photo.');
+  else if (!$('c1').checked || !adult()) need.push('Enter your age and agree to photo processing.');
   $('ph').disabled = deleting;
   $('cameraStart').disabled = !photoConfigLoaded || !adult() || !$('c1').checked || deleting;
   if ($('cameraStart').disabled) stopCamera();
@@ -594,7 +390,7 @@ function sync() {
   $('rn').disabled = need.length > 0 || !!pendingRender || deleting;
   $('del').disabled = deleting;
   $('clearTryData').disabled = deleting;
-  visible('clearTryData', !!file || !!$('ag').value || $('c1').checked || deleting);
+  visible('clearTryData', !!file || !!$('gf').files[0] || !!$('ag').value || $('c1').checked || deleting);
 
 }
 function clearPreview() {
@@ -679,33 +475,35 @@ drop.ondrop = event => {
   }
   const transfer = new DataTransfer();
   transfer.items.add(file);
-  if (event.target === $('phThumb') && $('ph').files[0]) {
-    $('gf').files = transfer.files;
-    $('gf').dispatchEvent(new Event('change', {bubbles: true}));
-    $('garmentDetails').open = true;
-    return;
-  }
   $('ph').files = transfer.files;
   $('ph').dispatchEvent(new Event('change', {bubbles: true}));
 };
 
-fetch('/api/tryon-config').then(response => {
-  if (!response.ok) throw new Error();
-  return response.json();
-}).then(config => {
-  remoteBackend = config.remote_backend;
-  if (remoteBackend) {
-    const provider = {local_http: 'the team GPU server', hf: 'Hugging Face', replicate: 'Replicate', gemini: 'Google Gemini'}[remoteBackend];
-    $('photoPrivacy').textContent = `I am a consenting adult team member. FitCheck sends my photo to ${provider}, a third-party model host, to create the preview. FitCheck deletes its copies on request or within 24 hours. The host may retain or log the photo.`;
-    if (remoteBackend === 'gemini') $('photoPrivacy').textContent += ' Gemini is experimental and excluded from the scored evaluation. Use only a service configuration that prohibits training on inputs.';
-    if (remoteBackend === 'hf') $('photoPrivacy').textContent += ' The public Space can queue or hit its quota.';
-  }
-  photoConfigLoaded = true;
-  $('c1').disabled = false;
+let photoConfigRequest;
+function loadPhotoConfig() {
+  if (photoConfigRequest) return;
+  photoConfigFailed = false;
   sync();
-}).catch(() => {
-  $('msg').textContent = 'Photo preview is temporarily unavailable. Reload the page to try again.';
-});
+  photoConfigRequest = fetch('/api/tryon-config').then(response => {
+    if (!response.ok) throw new Error();
+    return response.json();
+  }).then(config => {
+    remoteBackend = config.remote_backend;
+    if (remoteBackend) {
+      const provider = {local_http: 'the team GPU server', hf: 'Hugging Face', replicate: 'Replicate', gemini: 'Google Gemini'}[remoteBackend];
+      $('photoPrivacy').textContent = `I am a consenting adult team member. FitCheck sends my photo to ${provider}, a third-party model host, to create the preview. FitCheck deletes its copies on request or within 24 hours. The host may retain or log the photo.`;
+      if (remoteBackend === 'gemini') $('photoPrivacy').textContent += ' Gemini is experimental and excluded from the scored evaluation. Use only a service configuration that prohibits training on inputs.';
+      if (remoteBackend === 'hf') $('photoPrivacy').textContent += ' The public Space can queue or hit its quota.';
+    }
+    photoConfigLoaded = true;
+    $('c1').disabled = false;
+    sync();
+  }).catch(() => {
+    photoConfigFailed = true;
+    photoConfigRequest = null;
+    sync();
+  });
+}
 $('rn').onclick = async () => {
   if ($('rn').disabled) return;
   clearPreview();
@@ -717,13 +515,14 @@ $('rn').onclick = async () => {
   if (remoteBackend) {
     body.append('consent_remote', remoteBackend);
   }
-  body.append('garment_category', cur.p?.gcat || 'one-pieces');
-  body.append('desc', cur.p ? cur.p.cols[cur.c].name + ' ' + cur.p.name : 'kurta');
+  const sample = activeSample();
+  body.append('garment_category', garmentCategory());
+  body.append('desc', sample?.name || { tops: 'top', bottoms: 'bottom', 'one-pieces': 'dress or one-piece' }[garmentCategory()]);
   const photo = $('ph').files[0];
   body.append('photo', photo);
   const garmentFile = $('gf').files[0];
-  if (garmentFile) body.append('garment', garmentFile);
-  else if (cur.p?.cols[cur.c]?.image) body.append('sku_id',cur.p.id);
+  if (sample) body.append('sku_id', $('garmentSource').value);
+  else if (garmentFile) body.append('garment', garmentFile);
   else return;
   $('rn').disabled = true;
   const validation = await checkClientPhoto(photo);
@@ -789,7 +588,7 @@ function clearUserData() {
 }
 $('del').onclick = clearUserData;
 $('clearTryData').onclick = clearUserData;
-sync();
+updateGarment();
 // fit & returns
 const dirOf = b => [b.direction, b.direction === 'Near true' ? 't3' : 't1'];
 let brandSort = {key: 'ret', descending: true};
@@ -886,19 +685,24 @@ function renderResults(report) {
       : 'No successful renders in the service log. Latency and cost are not run.';
   }).catch(() => { $('liveMetrics').textContent = 'Render measurements could not be loaded.'; });
 }
-fetch('/api/fit-results').then(response => {
-  if (!response.ok) throw new Error();
-  return response.json();
-}).then(report => {
-  const brandNames = [...new Set(Object.values(report.brands).flatMap(Object.keys))].sort();
-  $('ub').append(...brandNames.map(name => new Option(name)));
-  brands = Object.values(report.brands['Women · Kurtas']);
-  const unreliable = brands.filter(brand => brand.chart_unreliable).length;
-  $('fitSummary').textContent = `${brands.length} kurta brands · ${unreliable} charts flagged using consented kept orders`;
-  renderBrands();
-  renderMessages();
-  renderResults(report);
-}).catch(() => {
-  $('rb').textContent = 'The evaluation report could not be loaded.';
-  $('fitSummary').textContent = 'Brand evidence could not be loaded.';
-});
+let evidenceRequest;
+function loadEvidence() {
+  if (evidenceRequest) return;
+  $('rb').textContent = 'Loading results…';
+  $('fitSummary').textContent = 'Loading brand evidence…';
+  evidenceRequest = fetch('/api/fit-results').then(response => {
+    if (!response.ok) throw new Error();
+    return response.json();
+  }).then(report => {
+    brands = Object.values(report.brands['Women · Kurtas']);
+    const unreliable = brands.filter(brand => brand.chart_unreliable).length;
+    $('fitSummary').textContent = `${brands.length} kurta brands · ${unreliable} charts flagged using consented kept orders`;
+    renderBrands();
+    renderMessages();
+    renderResults(report);
+  }).catch(() => {
+    evidenceRequest = null;
+    $('rb').textContent = 'The evaluation report could not be loaded.';
+    $('fitSummary').textContent = 'Brand evidence could not be loaded.';
+  });
+}

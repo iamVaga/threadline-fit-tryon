@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f8f7f2">
-  <title>FitCheck | Find your fit</title>
+  <title>FitCheck | Size Finder and Virtual Try-On</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Instrument+Serif:ital@0;1&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Instrument+Serif&amp;display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/fitcheck.css">
 </head>
 <body>
@@ -15,85 +15,26 @@
 <header class="site-header">
   <div class="header-inner">
     <a class="wordmark" href="/" aria-label="FitCheck home">FitCheck<span aria-hidden="true">.</span></a>
-    <nav class="main-nav" aria-label="Main navigation">
-      <button type="button" class="on" data-t="shop" aria-pressed="true">Shop</button>
-      <button type="button" data-t="size" aria-pressed="false">Size finder</button>
-    </nav>
-    <nav class="evidence-nav" aria-label="Evaluation">
-      <button type="button" data-t="fit" aria-pressed="false">Fit &amp; Returns</button>
-      <button type="button" data-t="res" aria-pressed="false">Results</button>
+    <nav class="main-nav" aria-label="FitCheck tools">
+      <button type="button" class="on" data-view="sizeStep" aria-pressed="true" aria-controls="sizeStep">Size Finder</button>
+      <button type="button" data-view="tryStep" aria-pressed="false" aria-controls="tryStep">Virtual Try-On</button>
     </nav>
   </div>
 </header>
 <main id="main" tabindex="-1">
-  <section id="shop" aria-label="Shop">
-    <div class="hero">
-      <div class="hero-copy">
-        <h1>Find your fit.<br><em>See it on you.</em></h1>
-        <p>Check your size across brands or try a garment on with your own photo.</p>
-        <div class="hero-actions">
-          <a class="btn" href="#collection">Browse garments <span aria-hidden="true">↘</span></a>
-          <button type="button" class="text-button" id="heroDemo">Try a size demo <span aria-hidden="true">→</span></button>
-        </div>
-      </div>
-      <div class="hero-photos" aria-hidden="true">
-        <img src="/products/in-67b3ab82bb.jpg" alt="" fetchpriority="high">
-        <img src="/products/in-a6f53586f0.jpg" alt="">
-      </div>
-    </div>
-
-    <section id="collection" class="collection" aria-labelledby="collectionTitle">
-      <div class="collection-head">
-        <div><h2 id="collectionTitle" tabindex="-1">The collection</h2><p class="mu">Sample garments for virtual try-on.</p></div>
-        <div class="search-control"><label class="sr-only" for="cs">Search garments</label><input id="cs" type="search" placeholder="Search garments"></div>
-      </div>
-      <div class="catalog-toolbar">
-        <div id="catChips" class="catchips" role="group" aria-label="Clothing category"></div>
-        <details class="filters" id="catalogFilters">
-          <summary>Filters<span aria-hidden="true"> +</span></summary>
-          <div class="filter-popover">
-            <label for="cbrand">Brand</label><select id="cbrand"><option value="">All brands</option></select>
-            <label for="csort">Sort by</label><select id="csort"><option value="">Featured</option><option value="lo">Price: low to high</option><option value="hi">Price: high to low</option></select>
-          </div>
-        </details>
-      </div>
-      <p id="catNote" class="mu catalog-note" role="status">Loading garments…</p>
-      <div id="catalog" class="catalog" role="group" aria-label="Clothing catalogue"></div>
-      <div id="catEmpty" class="empty-state hid"><h3>No matching garments</h3><p class="mu">Try another search or clear your filters.</p><button id="clearFilters" class="text-button" type="button">Clear filters</button></div>
-      <div class="catalog-bottom"><button id="catalogMore" class="btn s hid" type="button">Show more garments</button></div>
-    </section>
-  </section>
-
-  <section id="workspace" class="hid" aria-label="Size and try-on">
-    <button type="button" id="backToShop" class="text-button back-button"><span aria-hidden="true">←</span> Back to collection</button>
-    <div class="workspace-grid">
-      <figure class="product-image hid" id="pickedImage"><div id="swSvg"></div><figcaption id="swName"></figcaption></figure>
-      <div class="workspace-content">
-        <div class="product-meta hid" id="productMeta">
-          <p id="productBrand" class="product-brand"></p>
-          <h1 id="pn" tabindex="-1"></h1>
-          <p id="pmeta" class="mu"></p>
-          <div id="productColours" class="hid"><span class="field-label" id="colourLabel">Colour</span><div id="colourChips" class="chips" role="group" aria-labelledby="colourLabel"></div></div>
-          <div class="workspace-actions">
-            <button type="button" class="btn" id="showTryOn" aria-controls="tryStep">See it on me</button>
-            <button type="button" class="btn s" id="showSize" aria-controls="sizeStep">Find my size</button>
-          </div>
-          <p id="sampleFitNotice" class="mu hid">This photo sample has no size data.</p>
-        </div>
- <article class="tool-panel hid" id="sizeStep" tabindex="-1">
- <div class="panel-head"><h2>Find my size</h2><p class="mu" id="sizeIntro">Use a catalogue SKU or try a sample case.</p></div>
+  <section class="tool-panel" id="sizeStep" tabindex="-1" aria-labelledby="sizeTitle">
+ <div class="panel-head"><h1 id="sizeTitle">Find my size</h1><p>Pick a garment to get size advice based on how the brand fits.</p></div>
  <div class="fit-picker" id="fitPicker">
    <div class="fields">
-     <div><label for="fitCategory">Clothing category</label><select id="fitCategory"><option value="">All categories</option></select></div>
-     <div><label for="fitSearch">Search garments by name or brand</label><input id="fitSearch" type="search" placeholder="e.g. straight kurta"></div>
+     <div><label for="fitCategory">Category</label><select id="fitCategory"><option value="">All categories</option></select></div>
+     <div><label for="fitSearch">Garment or brand</label><input id="fitSearch" type="search" enterkeyhint="search" placeholder="e.g. straight jeans"></div>
    </div>
    <p id="fitSearchState" class="mu" role="status"></p>
    <ul id="fitMatches" class="fit-matches" aria-label="Matching garments"></ul>
    <p id="fitChoice" class="fit-choice hid" role="status"></p>
  </div>
- <div class="demo-tools"><button type="button" id="trySampleCase" class="text-button">Try a size demo <span aria-hidden="true">→</span></button>
- <details id="testDetails"><summary>Look up a test case</summary><label for="testLookup">Test ID</label>
- <div class="lookup-row"><input id="testLookup" type="search" placeholder="FT-10026"><button id="lookupCase" type="button" class="btn s">Look up test case</button></div></details></div>
+ <div class="demo-tools"><button type="button" id="trySampleCase" class="text-button" aria-controls="out">Try a size demo <span aria-hidden="true">→</span></button>
+ </div>
  <div id="out" class="result-size hid" tabindex="-1" aria-live="polite">
    <div class="size">
      <div><span class="eyebrow">Recommended size</span><div class="badge" id="sz">M</div></div>
@@ -105,8 +46,7 @@
    <div id="notes"></div>
    <div class="mu" id="cmp"></div>
  </div>
- <details id="skuField"><summary>Enter a product SKU</summary><div class="fields"><div><label for="skuLookup">Product SKU</label><input id="skuLookup" type="search" placeholder="TL-102361"></div>
- <div><label for="customerLookup">Demo customer ID (optional)</label><input id="customerLookup" type="search" placeholder="C-500253"></div></div></details>
+ <div class="fit-inputs hid" id="fitInputs">
  <div class="fields"><div><label for="us">Usual size</label><select id="us"><option value="">Not sure</option><option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option><option>XXL</option><option>3XL</option></select>
  </div><div><label for="ub">Usual brand (optional)</label><select id="ub"><option value="">Not sure / other brand</option></select>
  </div><div><label for="fp">How do you like it to fit?</label><select id="fp"><option value="-0.3">Snug</option><option value="0" selected>Regular</option><option value="0.3">Roomy</option></select>
@@ -124,13 +64,34 @@
      <p class="mu"><b>Bust:</b> around the fullest part of your chest, tape level across your back. <b>Waist:</b> around the narrowest part of your torso. <b>Hip:</b> around the fullest part of your hips. Keep the tape snug but not tight, and measure over thin clothing.</p>
    </details>
  </details>
- <p id="recommendStatus" class="mu" role="status"></p><button class="btn" id="go">Recommend my size</button>
-</article>
+ <button class="btn primary-action" id="go" type="button">Recommend my size</button>
+ </div>
+ <p id="recommendStatus" class="mu" role="status"></p>
+ <details class="advanced">
+   <summary>More lookup options</summary>
+ <details id="testDetails"><summary>Look up a test case</summary><label for="testLookup">Test ID</label>
+ <div class="lookup-row"><input id="testLookup" type="search" placeholder="FT-10026"><button id="lookupCase" type="button" class="btn s">Look up test case</button></div></details>
+ <details id="skuField"><summary>Enter a product SKU</summary><div class="fields"><div><label for="skuLookup">Product SKU</label><input id="skuLookup" type="search" placeholder="TL-102361"></div>
+ <div><label for="customerLookup">Demo customer ID (optional)</label><input id="customerLookup" type="search" placeholder="C-500253"></div></div></details>
+ </details>
+</section>
 
- <article class="tool-panel hid" id="tryStep" tabindex="-1">
- <div class="panel-head"><h2>See it on me</h2><p class="mu">Create a simulated preview with your photo. For adults 18+.</p></div>
- <div class="tog"><input type="checkbox" role="switch" id="c1" disabled><label for="c1">I agree to send my photo for this preview. <span class="mu" id="photoPrivacy">FitCheck checks the photo and clears its copies when I delete them or within 24 hours.</span></label></div>
- <label for="ag">Your age</label><input id="ag" type="number" inputmode="numeric" min="5" max="99" placeholder="e.g. 27">
+  <section class="tool-panel hid" id="tryStep" tabindex="-1" aria-labelledby="tryTitle">
+ <div class="panel-head"><h1 id="tryTitle">Virtual try-on</h1><p>See a simulated preview using your own photo. For adults 18+.</p></div>
+ <div class="garment-picker">
+   <label for="garmentSource">Garment</label>
+   <select id="garmentSource">
+     <option value="">Upload a garment photo</option>
+     <option value="FS-18">White T-shirt (sample)</option>
+     <option value="DJ-180">Light dress (sample)</option>
+   </select>
+   <div id="garmentUpload" class="garment-upload">
+     <label for="garmentType">Garment type</label>
+     <select id="garmentType"><option value="tops">Top</option><option value="bottoms">Bottom</option><option value="one-pieces">Dress or one-piece</option></select>
+     <label for="gf">Garment photo</label><p id="garmentGuide" class="mu">Use a clear photo of the garment on its own.</p>
+     <input id="gf" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="garmentGuide">
+   </div>
+ </div>
  <div class="drop" id="photoDrop">
  <label for="ph">Your photo</label><p id="photoGuide" class="mu">Use a clear photo of one person in good light.</p><input id="ph" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="photoGuide"><img id="phThumb" class="hid" alt="Your chosen photo"></div>
  <button id="cameraStart" class="btn s" type="button">Open camera</button>
@@ -140,10 +101,13 @@
    <button id="capture" class="btn" type="button">Capture photo</button>
    <button id="cameraClose" class="btn s" type="button">Close camera</button>
  </div>
- <details id="garmentDetails"><summary>Use a different garment photo</summary><label for="gf">Garment photo (JPG, PNG or WebP)</label><input id="gf" type="file" accept="image/jpeg,image/png,image/webp"><p class="mu">Use a photo of the garment on its own.</p></details>
+ <div class="try-consent">
+   <label for="ag">Your age</label><input id="ag" type="number" inputmode="numeric" min="18" placeholder="e.g. 27">
+   <div class="tog"><input type="checkbox" role="switch" id="c1" disabled><label for="c1">I agree to send my photo for this preview.<span class="mu" id="photoPrivacy">FitCheck checks the photo and deletes its copies on request or within 24 hours.</span></label></div>
+ </div>
  <p id="tryNeeds" class="mu" role="status"></p>
  <div id="msg" class="mu" role="status"></div>
- <div class="preview-actions"><button class="btn" id="rn" disabled>Generate preview</button><button class="text-button hid" id="clearTryData" type="button">Clear photo and data</button></div>
+ <div class="preview-actions"><button class="btn primary-action" id="rn" type="button" disabled>Generate preview</button><button class="text-button hid" id="clearTryData" type="button">Clear photo and data</button></div>
  <div id="renderProgress" class="hid"><div class="skeleton" aria-hidden="true"></div><p id="renderStage" class="mu" aria-hidden="true"></p></div>
  <div id="preview" class="preview hid">
    <div id="previewImage" class="preview-image">
@@ -158,25 +122,26 @@
      <div class="compare-labels" aria-hidden="true"><span>More preview</span><span>More original</span></div>
    </div>
    <p class="mu hid" id="note">Use the size finder for sizing advice.</p>
- </div></article>
- <details id="sampleGallery" class="gallery hid"><summary>Sample gallery</summary><p class="mu" id="galleryStatus" role="status">Loading samples…</p><div id="galleryItems" class="catalog"></div></details>
-      </div>
-    </div>
+ </div>
+ <details id="sampleGallery" class="gallery hid"><summary>Sample gallery</summary><p class="mu" id="galleryStatus" role="status">Loading samples…</p><div id="galleryItems" class="gallery-grid"></div></details>
   </section>
 
-<section id="fit" class="evidence hid" aria-label="Fit and Returns">
+<section id="fit" class="evidence hid" tabindex="-1" aria-label="Fit and Returns">
  <div class="card"><h2>Kurta brands by size-return rate</h2><p class="mu">Jan–Sep 2026 training sample. Direction comes from the learned size offset. Chart gap compares kept sizes with published charts on consented orders. The flag uses the chart gap and conflicting return evidence.</p>
  <div id="fitSummary" class="summary"></div><div class="wrap" tabindex="0" role="region" aria-label="Kurta brand data, scrollable table"><table id="bt"></table></div></div>
  <div class="card"><h2>Draft messages to brands</h2><p class="mu">Aggregated evidence only. No individual data is shared.</p><div id="ms" class="messages"></div></div>
 </section>
 
-<section id="res" class="evidence hid" aria-label="Results"><div id="rb"></div></section>
+<section id="res" class="evidence hid" tabindex="-1" aria-label="Results"><div id="rb"></div></section>
 </main>
 <footer class="site-footer">
   <div class="footer-inner">
-    <span class="footer-brand">FitCheck</span>
-    <p class="mu">A prototype built on synthetic PS-13 fit data.</p>
-    <button class="text-button" type="button" id="del">Delete my photo and data</button>
+    <p class="mu">FitCheck uses synthetic PS-13 fit data.</p>
+    <nav class="evidence-nav" aria-label="Project evidence">
+      <button type="button" data-view="fit" aria-pressed="false">Fit &amp; Returns</button>
+      <button type="button" data-view="res" aria-pressed="false">Results</button>
+      <button class="text-button" type="button" id="del">Delete my data</button>
+    </nav>
   </div>
 </footer>
 <div class="toast hid" id="toast" role="status"></div>
