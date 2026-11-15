@@ -125,7 +125,9 @@ def normalize_photo(image):
     return image, changes
 
 
-def check_photo(image):
+def check_photo(image, category="one-pieces"):
+    # Tops only need head to hips in frame; dresses, sets and bottoms need the whole body.
+    upper = category == "tops"
     width, height = image.size
     if min(width, height) < 480:
         return "Please retake the photo at a higher resolution (at least 480 pixels on the short side)."
@@ -152,18 +154,18 @@ def check_photo(image):
         return "Please retake the photo with just one person in the frame."
 
     pose = poses[0]
-    required = (0, 2, 5, 11, 12, 23, 24, 29, 30, 31, 32)
+    required = (0, 2, 5, 11, 12, 23, 24) if upper else (0, 2, 5, 11, 12, 23, 24, 29, 30, 31, 32)
     if any(
         not (0.02 < pose[index].x < 0.98 and 0.025 < pose[index].y < 0.975
              and pose[index].visibility >= 0.5 and pose[index].presence >= 0.5)
         for index in required
     ):
-        return "Step back and retake the photo with your whole head and both feet visible."
+        return "Step back and retake the photo so your head and hips are fully in frame." if upper else "Step back and retake the photo with your whole head and both feet visible."
     foreground = result.segmentation_masks[0].numpy_view().squeeze() > 0.55
     ys, _ = np.where(foreground)
-    if not ys.size or ys.min() < foreground.shape[0] * .015 or ys.max() >= foreground.shape[0] * .985:
+    if not ys.size or ys.min() < foreground.shape[0] * .015 or (not upper and ys.max() >= foreground.shape[0] * .985):
         return "Leave a little space above your head and below your feet, then retake."
-    for heel, toe in ((29, 31), (30, 32)):
+    for heel, toe in (() if upper else ((29, 31), (30, 32))):
         evidence = []
         for index in (heel, toe):
             y = round(pose[index].y * (foreground.shape[0] - 1))

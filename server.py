@@ -379,7 +379,7 @@ def tryon(session: str = Form(...), age: int = Form(0), consent_photo: str = For
                          422, rejected_before_render=True)
         person, adjustments = normalize_photo(person)
         try:
-            retake = check_photo(person)
+            retake = check_photo(person, garment_category)
         except (RuntimeError, ValueError, OSError) as exc:
             print(f"Photo check failed: {exc!r}")
             return error("Photo checks are temporarily unavailable. Please try again later.",

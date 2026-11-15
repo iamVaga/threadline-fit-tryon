@@ -51,7 +51,7 @@ def test_consent_age(client,upload,updates):
 
 
 def test_session_global_cap_and_delete(client,upload,monkeypatch):
-    monkeypatch.setattr(server,"check_photo",lambda _:None)
+    monkeypatch.setattr(server,"check_photo",lambda *_:None)
     monkeypatch.setattr(server,"DAILY_CAP",4)
     session=form()
     for i in range(3):
@@ -72,7 +72,7 @@ def test_session_global_cap_and_delete(client,upload,monkeypatch):
 
 
 def test_failed_provider_shows_gallery_error(client,upload,monkeypatch):
-    monkeypatch.setattr(server,"check_photo",lambda _:None)
+    monkeypatch.setattr(server,"check_photo",lambda *_:None)
     monkeypatch.setattr(server,"run_model",lambda *args:(args[0],"model_unavailable"))
     response=client.post("/api/tryon",data=form(),files=upload)
     assert response.status_code==503
@@ -80,7 +80,7 @@ def test_failed_provider_shows_gallery_error(client,upload,monkeypatch):
 
 
 def test_remote_tryon_requires_only_provider_consent(client,upload,monkeypatch):
-    monkeypatch.setattr(server,"check_photo",lambda _:None)
+    monkeypatch.setattr(server,"check_photo",lambda *_:None)
     monkeypatch.setattr(server,"remote_backend",lambda:"local_http")
     form_data = form() | {"consent_remote":"local_http"}
     response=client.post("/api/tryon",data=form_data,files=upload)
