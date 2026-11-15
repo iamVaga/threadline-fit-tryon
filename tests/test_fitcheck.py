@@ -79,6 +79,16 @@ def test_failed_provider_shows_gallery_error(client,upload,monkeypatch):
     assert "sample gallery" in response.json()["error"] and not response.json().get("image")
 
 
+def test_remote_tryon_requires_only_provider_consent(client,upload,monkeypatch):
+    monkeypatch.setattr(server,"check_photo",lambda _:None)
+    monkeypatch.setattr(server,"remote_backend",lambda:"local_http")
+    form_data = form() | {"consent_remote":"local_http"}
+    response=client.post("/api/tryon",data=form_data,files=upload)
+    assert response.status_code==200
+    assert response.json()["mock"] is True
+    assert client.post("/api/tryon",data=form(),files=upload).status_code==403
+
+
 def test_tiny_and_dark_rejected_before_renderer(client,upload,monkeypatch):
     monkeypatch.setattr(server,"run_model",lambda *args:pytest.fail("model contacted"))
     black=BytesIO()
@@ -157,6 +167,17 @@ def test_recommend_numeric_manual_and_measurement_consent(client):
     plain=client.post("/api/recommend",json=params).json()
     assert plain["size"].isdigit() and "no stretch" in plain["reason"]
     assert client.post("/api/recommend",json=params|{"waist":130}).json()==plain
+
+
+def test_precomputed_pair_and_server_timing(client):
+    case = model()["predictions"]["FT-10022"]
+    by_id = client.post("/api/recommend",json={"test_id":"FT-10022"})
+    by_pair = client.post("/api/recommend",json={"customer_id":case["customer_id"],
+                                                "sku_id":case["sku_id"]})
+    assert by_id.json() == by_pair.json()
+    assert "customer_id" not in by_pair.json()
+    assert by_pair.headers["Server-Timing"].startswith("recommend;dur=")
+    assert float(by_pair.headers["Server-Timing"].split("=")[1]) >= 0
 
 
 def test_chart_evidence_and_all_catalogue_categories(client):

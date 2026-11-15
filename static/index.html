@@ -283,7 +283,6 @@ th button { min-height:44px; border:0; padding:0; background:none; color:var(--i
  <p class="mu">Photo is optional and never needed to shop. Each consent is a separate choice.</p>
  <p id="tryOn" class="lab"></p>
  <div class="tog"><input type="checkbox" role="switch" id="c1"><label for="c1">I agree to send my photo for this preview. <span class="mu" id="photoPrivacy">FitCheck checks the photo and clears its copies when I delete them or within 24 hours.</span></label></div>
- <div id="teamAccess" class="hid"><label for="teamCode">Team access code</label><input id="teamCode" type="password" autocomplete="off" maxlength="256"></div>
  <label for="ag">Age (photo try-on is for 18+)</label><input id="ag" type="number" inputmode="numeric" min="5" max="99" placeholder="e.g. 27">
  <div class="drop" id="photoDrop">
  <svg viewBox="0 0 58 70" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 14V4h10m32 0h10v10M3 56v10h10m32 0h10V56"/><circle cx="29" cy="14" r="6"/><path d="M24 24h10l8 18-5 2-4-9 2 24h-5l-1-14-1 14h-5l2-24-4 9-5-2Z"/></svg>
@@ -525,12 +524,16 @@ async function rec(lookup = false) {
     $('cf').textContent = result.confidence === null ? 'Uncalibrated' : `${(result.confidence*100).toFixed(1)}% confidence`;
     $('cb').style.strokeDasharray = `${(result.confidence || 0)*100} 100`;
     $('rs').textContent = result.reason;
-    $('prec').textContent = result.confidence === null ? '' : `August–September calibration, n=${result.calibration_n.toLocaleString()}.`;
+    $('prec').textContent = result.confidence === null ? '' : `Late September calibration, n=${result.calibration_n.toLocaleString()}.`;
     $('sizeHint').textContent = 'Between available sizes';
     $('sizeHint').classList.toggle('hid', !result.between_sizes);
     $('cmp').textContent = `${result.brand} · ${result.category} · ${result.sku_id}`;
     $('notes').textContent = result.chart_unreliable ? 'Published chart flagged as unreliable in Fit & Returns.' : '';
-    $('recommendStatus').textContent = `${Math.round(performance.now()-started)} ms including network.`;
+    const serverMs = response.headers.get('Server-Timing')?.match(/recommend;dur=([\d.]+)/)?.[1];
+    const elapsed = Math.round(performance.now()-started);
+    $('recommendStatus').textContent = serverMs
+      ? `${elapsed} ms end to end · ${Number(serverMs).toFixed(2)} ms server compute.`
+      : `${elapsed} ms end to end.`;
     $('out').classList.remove('hid');
     if (lookup && result.needs_input) {
       $('skuLookup').value = result.sku_id;
@@ -700,10 +703,8 @@ function sync() {
   if (!file) need.push('choose a photo');
   if (!$('c1').checked) need.push('tick the photo consent');
   if (!adult()) need.push('enter your age (18+)');
-  if (remoteBackend && !$('teamCode').value) need.push('enter the team access code');
   if (!$('gf').files[0] && !cur.p?.cols[cur.c]?.image) need.push('upload a garment-only photo');
-  $('ph').disabled = !photoConfigLoaded || !adult() || !$('c1').checked || deleting ||
-    Boolean(remoteBackend && !$('teamCode').value);
+  $('ph').disabled = !photoConfigLoaded || !adult() || !$('c1').checked || deleting;
   $('cameraStart').disabled = $('ph').disabled;
   if ($('ph').disabled) stopCamera();
   $('tryNeeds').textContent = need.length ? 'To see it on you: ' + need.join(', ') + '.' : '';
@@ -803,7 +804,6 @@ drop.ondrop = event => {
   $('ph').dispatchEvent(new Event('change', {bubbles: true}));
 };
 
-$('teamCode').oninput = sync;
 fetch('/api/tryon-config').then(response => {
   if (!response.ok) throw new Error();
   return response.json();
@@ -814,7 +814,6 @@ fetch('/api/tryon-config').then(response => {
     $('photoPrivacy').textContent = `I am a consenting adult team member. FitCheck sends my photo to ${provider}, a third-party model host, to create the preview. FitCheck deletes its copies on request or within 24 hours. The host may retain or log the photo.`;
     if (remoteBackend === 'gemini') $('photoPrivacy').textContent += ' Gemini is experimental and excluded from the scored evaluation. Use only a service configuration that prohibits training on inputs.';
     if (remoteBackend === 'hf') $('photoPrivacy').textContent += ' The public Space can queue or hit its quota.';
-    $('teamAccess').classList.remove('hid');
   }
   photoConfigLoaded = true;
   $('c1').disabled = false;
@@ -832,7 +831,6 @@ $('rn').onclick = async () => {
   body.append('consent_photo', 'true');
   if (remoteBackend) {
     body.append('consent_remote', remoteBackend);
-    body.append('team_code', $('teamCode').value);
   }
   body.append('desc', cur.p ? cur.p.cols[cur.c].name + ' ' + cur.p.name : 'kurta');
   const photo = $('ph').files[0];
@@ -984,7 +982,7 @@ function renderResults(report) {
     <p class="mu">Scenarios multiply the Jan–Sep kurta size-return volume by 25 and apply the held-out relative error change at each adoption level. Assumes 60% refund share and ₹117 per return. These are projections.</p></div>
     <div class="card"><h2>Planned conversion experiment</h2>
     <p>Randomise by customer with sticky assignment. Primary metric is kurta PDP purchase conversion. Power target is 80% at a two-sided 5% significance level, with a 3.9% design baseline and 10% relative lift.</p>
-    <p>Independent-session starting point: ${business.ab.per_arm.toLocaleString()} sessions per arm. ${business.ab.weeks} whole weeks at ${business.ab.kurta_sessions.toLocaleString()} eligible sessions per September month in the sample. Adjust upward for customer clustering and anonymous sessions without stable IDs.</p>
+    <p>Plan ${business.ab.weeks} whole weeks and ${business.ab.per_arm.toLocaleString()} sessions per arm. The plan assumes ${business.ab.company_monthly_kurta_sessions.toLocaleString()} eligible company sessions per month, scaling the September sample of ${business.ab.kurta_sessions.toLocaleString()} by ${business.ab.traffic_scale}. The four-week minimum keeps weeks 2–4 available for separate reporting. Verify company traffic and adjust for customer clustering.</p>
     <p>Measure size-related returns 30 days after purchase. Use intention-to-treat and report weeks 2–4 separately.</p></div>
     <div class="card warn"><h2>Try-on evaluation</h2><p>The 120-case grid has no approved scores in this deployment. Body-type and skin-tone results are not run.</p><p id="liveMetrics" class="mu">Loading live render measurements…</p></div>`;
   fetch('/api/metrics').then(response => {

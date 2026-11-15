@@ -63,11 +63,44 @@ def certainty_band(history_count, has_anchor):
 @lru_cache(maxsize=1)
 def model():
     path = Path(__file__).resolve().parent / "results" / "model.json"
-    return json.loads(path.read_text(encoding="utf-8"))
+    state = json.loads(path.read_text(encoding="utf-8"))
+    state["test_by_customer_sku"] = {
+        (result["customer_id"], result["sku_id"]): case for case,result in state["predictions"].items()
+    }
+    state["test_response"] = {
+        case: json.dumps({key:value for key,value in result.items() if key != "customer_id"},
+                         ensure_ascii=False,separators=(",",":")).encode()
+        for case,result in state["predictions"].items()
+    }
+    return state
+
+
+def tree_score(ensemble, features):
+    result = ensemble["intercept"]
+    for children_left, children_right, feature, threshold, value in ensemble["trees"]:
+        node = 0
+        while children_left[node] != -1:
+            node = children_left[node] if features[feature[node]] <= threshold[node] else children_right[node]
+        result += ensemble["rate"] * value[node]
+    return result
+
+
+def model_features(state, product, target, anchor, measured, history, same_brand, count):
+    category, brand = product["category"], product["brand"]
+    mean_history = sum(x * w for x, w in history) / sum(w for _, w in history) if history else target
+    return [
+        target, -1 if anchor is None else anchor, -1 if measured is None else measured,
+        mean_history, min(count, 15), min(len(same_brand), 10),
+        sum(same_brand) / len(same_brand) if same_brand else target,
+        product_adjustment(product), product.get("stretch_pct") if product.get("stretch_pct") is not None else -1,
+        state["offsets"].get(category, {}).get(brand, 0),
+        *[int(category.endswith(garment)) for garment in PRIMARY],
+        int(category.startswith("Women")),
+    ]
 
 
 def predict(state, product, profile=None, usual_size=None, usual_brand=None, preference=0,
-            dimensions=None):
+            dimensions=None, *, with_features=False):
     category, brand = product["category"], product["brand"]
     scale = labels(category)
     offsets = state["offsets"].get(category, {})
@@ -96,6 +129,12 @@ def predict(state, product, profile=None, usual_size=None, usual_brand=None, pre
     if same_brand:
         latent = (latent + sum(same_brand)) / (1 + len(same_brand))
     target = latent + offset + product_adjustment(product) + preference
+    count = profile.get("count", 0)
+    features = None
+    if with_features or "ordinal_boost" in state or "acceptance_boost" in state:
+        features = model_features(state, product, target - preference, anchor, measured, history, same_brand, count)
+    if "ordinal_boost" in state:
+        target += tree_score(state["ordinal_boost"], features)
     options = [(index(label, category), label) for label in product["sizes_available"]]
     options = [(i, label) for i, label in options if i is not None]
     if not options:
@@ -105,9 +144,16 @@ def predict(state, product, profile=None, usual_size=None, usual_brand=None, pre
     margin = .02 if rigid and category.endswith("Jeans") else .18
     between = any(left[0] + margin < target < right[0] - margin
                   for left, right in zip(ordered_options, ordered_options[1:]))
-    if rigid and category.endswith("Jeans") and between:
+    rounded_up = rigid and category.endswith("Jeans") and between
+    if "acceptance_boost" in state:
+        # The binary classifier logit is monotonic in estimated acceptance probability.
+        nearest = max(ordered_options, key=lambda item: (
+            tree_score(state["acceptance_boost"], [*features, item[0], item[0] - target]),
+            -abs(item[0] - target),
+        ))
+        rounded_up = False
+    elif rounded_up:
         nearest = next(item for item in ordered_options if item[0] > target)
-    count = profile.get("count", 0)
     group = certainty_band(count, anchor is not None or measured is not None)
     calibration = state.get("calibration", {}).get(group, {})
     evidence = state.get("brand_index", {}).get(category, {}).get(brand, {})
@@ -119,10 +165,13 @@ def predict(state, product, profile=None, usual_size=None, usual_brand=None, pre
         reason = "Starting size from category history. Add your usual size and fit preference for a more specific recommendation."
     if rigid and category.endswith("Jeans"):
         reason += " The fabric has no stretch."
-        if between:
+        if rounded_up:
             reason += " We chose the larger size because the estimate falls between sizes."
-    return {"size": nearest[1], "confidence": calibration.get("accuracy"),
+    result = {"size": nearest[1], "confidence": calibration.get("accuracy"),
             "calibration_n": calibration.get("n", 0), "reason": reason, "history_count": count,
             "needs_input": not sums, "between_sizes": between, "direction": direction,
             "chart_unreliable": evidence.get("chart_unreliable", False), "sku_id": product["sku_id"],
             "category": category, "brand": brand}
+    if with_features:
+        result.update(features=features, target=target)
+    return result

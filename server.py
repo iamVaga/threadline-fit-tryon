@@ -3,7 +3,6 @@ import base64
 import csv
 from datetime import datetime, timezone
 from functools import lru_cache
-import hmac
 import io
 import json
 import os
@@ -16,7 +15,7 @@ from pathlib import Path
 from uuid import UUID
 
 from fastapi import FastAPI, File, Form, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
@@ -274,12 +273,23 @@ class RecommendationInput(BaseModel):
 
 @app.post("/api/recommend")
 def recommend(request: RecommendationInput):
+    started = time.perf_counter()
+    response = recommendation_response(request)
+    response.headers["Server-Timing"] = f"recommend;dur={(time.perf_counter()-started)*1000:.3f}"
+    return response
+
+
+def recommendation_response(request: RecommendationInput):
     state = model()
-    base = state["predictions"].get(request.test_id)
+    has_override = bool(request.usual_size or request.usual_brand or request.consent_measurements or request.fit_preference)
+    case = request.test_id
+    if not case and not has_override:
+        case = state["test_by_customer_sku"].get((request.customer_id,request.sku_id))
+    base = state["predictions"].get(case)
     if request.test_id and not base:
         return error("That test case was not found.", 404)
-    if base and not (request.usual_size or request.consent_measurements or request.fit_preference):
-        return JSONResponse({k:v for k,v in base.items() if k != "customer_id"}, headers=NO_STORE)
+    if base and not has_override:
+        return Response(state["test_response"][case],media_type="application/json",headers=NO_STORE)
     sku = base["sku_id"] if base else request.sku_id
     product = state["products"].get(sku)
     if not product:
@@ -306,7 +316,7 @@ def tryon_config():
 
 @app.post("/api/tryon")
 def tryon(session: str = Form(...), age: int = Form(0), consent_photo: str = Form("false"),
-          consent_remote: str = Form(""), team_code: str = Form("", max_length=256),
+          consent_remote: str = Form(""),
           desc: str = Form("kurta", max_length=160), garment_name: str = Form(""),
           sku_id: str = Form("", max_length=80), garment_category: str = Form("one-pieces"),
           photo: UploadFile = File(...), garment: UploadFile | None = File(None)):
@@ -317,11 +327,8 @@ def tryon(session: str = Form(...), age: int = Form(0), consent_photo: str = For
         return error("Photo try-on is for people aged 18 or over.", 403)
     backend = remote_backend()
     if backend:
-        required_code = os.getenv("TRYON_TEAM_CODE", "")
-        if not required_code:
-            return error("Team try-on is temporarily unavailable.", 503)
-        if consent_remote != backend or not hmac.compare_digest(team_code.encode(), required_code.encode()):
-            return error("Remote try-on requires team consent and a valid team code.", 403)
+        if consent_remote != backend:
+            return error("Remote try-on consent is required.", 403)
     if not canonical_session(session):
         return error("Please reload the page to start a new session.", 422)
     if garment_category not in {"tops", "bottoms", "one-pieces"}:

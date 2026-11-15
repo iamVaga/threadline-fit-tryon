@@ -84,7 +84,6 @@ def render(args):
                         start = perf_counter()
                         response = client.post("/api/tryon", files={"photo":photo,"garment":item}, data={
                             "session":session,"age":"18","consent_photo":"true","consent_remote":backend,
-                            "team_code":os.environ.get("TRYON_TEAM_CODE",""),
                             "desc":str(case["garment_pattern_or_print"]) + " " + str(case["garment_colour"]),
                             "garment_category":model_category(case["category"]),
                         })

@@ -111,9 +111,6 @@ def evaluate(args):
         config = client.get("/api/tryon-config")
         config.raise_for_status()
         backend = config.json()["remote_backend"]
-        team_code = os.getenv("TRYON_TEAM_CODE", "")
-        if backend and not team_code:
-            raise ValueError("Set TRYON_TEAM_CODE to the local server's team access code.")
         for row, (photo, garment) in targets.items():
             for name in ({LATENCY, COST} | HUMAN) & columns.keys():
                 sheet.cell(row, columns[name]).value = None
@@ -125,7 +122,7 @@ def evaluate(args):
                     started = time.perf_counter()
                     response = client.post("/api/tryon", data={
                         "session": session, "age": 18, "consent_photo": "true",
-                        "consent_remote": backend or "", "team_code": team_code,
+                        "consent_remote": backend or "",
                     }, files={"photo": person_file, "garment": garment_file})
                 if not response.is_success:
                     raise ValueError(f"HTTP {response.status_code}: {response.json().get('error', 'request failed')}")
