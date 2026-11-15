@@ -10,7 +10,7 @@ from tempfile import TemporaryDirectory
 import httpx
 import mediapipe as mp
 import numpy as np
-from PIL import Image, ImageChops, ImageFilter, ImageOps
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageOps
 
 ROOT = Path(__file__).resolve().parent
 POSE_MODEL = ROOT / "pose_landmarker_lite.task"
@@ -221,6 +221,27 @@ def clothing_mask(segmenter, image):
     return mask.filter(ImageFilter.MinFilter(5))
 
 
+def sleeve_mask(image):
+    """Upper-arm area (shoulder to about 70% of the way to the elbow) so a top with sleeves can cover bare arms."""
+    mask = Image.new("L", image.size, 0)
+    pose = detect_pose(image)
+    if not pose:
+        return mask
+    draw = ImageDraw.Draw(mask)
+    w, h = image.size
+    shoulders = math.hypot((pose[11].x - pose[12].x) * w, (pose[11].y - pose[12].y) * h)
+    width = max(16, int(shoulders * 0.32))
+    for shoulder, elbow in ((11, 13), (12, 14)):
+        if pose[shoulder].visibility < 0.5 or pose[elbow].visibility < 0.5:
+            continue
+        sx, sy = pose[shoulder].x * w, pose[shoulder].y * h
+        ex, ey = sx + (pose[elbow].x * w - sx) * 0.7, sy + (pose[elbow].y * h - sy) * 0.7
+        draw.line((sx, sy, ex, ey), fill=255, width=width)
+        for x, y in ((sx, sy), (ex, ey)):
+            draw.ellipse((x - width / 2, y - width / 2, x + width / 2, y + width / 2), fill=255)
+    return mask
+
+
 def remote_backend():
     if os.getenv("TRYON_REMOTE") != "1" or os.getenv("MOCK") == "1":
         return None
@@ -306,6 +327,10 @@ def _run_on(person, garment, desc, session_folder, backend, token, category):
             original_mask = clothing_mask(segmenter, padded)
             if not original_mask.getbbox():
                 return person, "preservation_check"
+            if category == "tops":
+                # A sleeved top may cover bare arms. The mask is still intersected with the clothing the
+                # model actually drew, so arms stay untouched unless the result really has sleeves there.
+                original_mask = ImageChops.lighter(original_mask, sleeve_mask(padded))
             with TemporaryDirectory(prefix="work-", dir=session_folder) as work:
                 person_path = Path(work) / "person.jpg"
                 garment_path = Path(work) / "garment.jpg"
