@@ -218,15 +218,15 @@ th button { min-height:44px; border:0; padding:0; background:none; color:var(--i
 
 <section id="shop" aria-label="Shop">
  <ol class="stepper" aria-label="Shopping steps">
-   <li><button type="button" data-step="0" aria-current="step"><b>1</b> Pick a kurta</button></li>
+   <li><button type="button" data-step="0" aria-current="step"><b>1</b> Pick a garment</button></li>
    <li><button type="button" data-step="1"><b>2</b> Find my size</button></li>
    <li><button type="button" data-step="2"><b>3</b> See it on me</button></li>
  </ol>
  <div class="shop-grid">
  <article class="card" id="pickStep" tabindex="-1">
- <div class="card-head"><span class="step-index" aria-hidden="true">1</span><h2>Pick a kurta</h2></div>
+ <div class="card-head"><span class="step-index" aria-hidden="true">1</span><h2>Pick a garment</h2></div>
  <div class="catbar">
-   <div><label class="sr-only" for="cs">Search kurtas</label><input id="cs" type="search" placeholder="Search kurtas, brands, colours"></div>
+   <div><label class="sr-only" for="cs">Search garments</label><input id="cs" type="search" placeholder="Search saree, kurta, shirt, brand…"></div>
    <div><label class="sr-only" for="cbrand">Brand</label><select id="cbrand"></select></div>
    <div><label class="sr-only" for="csort">Sort</label><select id="csort"><option value="">Featured</option><option value="lo">Price: low to high</option><option value="hi">Price: high to low</option></select></div>
  </div>
@@ -478,7 +478,8 @@ fetch('/api/catalog').then(response => {
   const available = [...new Set(CAT.map(item => item.brand))].sort();
   for (const id of ['cbrand','ub']) $(id).replaceChildren(new Option(id === 'ub' ? 'Not sure / other brand' : 'All brands',''), ...available.map(brand => new Option(brand)));
   $('catNote').textContent = 'Synthetic kurta catalogue plus free sample clothing from DummyJSON, Fake Store and Indo Fashion images. Size advice covers the synthetic kurtas only.';
-  if (CAT.length) selectProduct(CAT[0]);
+  if (CAT.length) selectProduct(CAT.find(item => !item.free) || CAT[0]);
+  CAT.sort((a, b) => Number(!!b.free) - Number(!!a.free)); // photo items first (stable sort)
   renderCatalog();
 }).catch(() => {
   $('catNote').textContent = 'The catalogue could not load. You can still enter a SKU or test case below.';
