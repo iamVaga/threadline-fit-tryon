@@ -1,6 +1,8 @@
 """FitCheck Fit & Try-On API."""
 import base64
 import csv
+from datetime import datetime, timezone
+from functools import lru_cache
 import hmac
 import io
 import json
@@ -17,8 +19,11 @@ from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image, ImageDraw, ImageFont
+import numpy as np
 
 from tryon_model import ROOT, check_photo, read_image, remote_backend, run_model
+from recommender import model, predict
+from pydantic import BaseModel, Field
 
 TMP = Path(os.getenv("TMP_DIR", str(Path(tempfile.gettempdir()) / "fitcheck-sessions")))
 LOG = Path(os.getenv("LOG_FILE", "render_log.csv"))
@@ -33,6 +38,9 @@ IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp"}
 LOCKS = [threading.Lock() for _ in range(64)]
 COUNTS = [{} for _ in LOCKS]
 LOG_LOCK = threading.Lock()
+DAILY_CAP = int(os.getenv("TRYON_DAILY_CAP", "150"))
+DAILY_LEDGER = LOG.with_name("tryon-daily.json")
+GALLERY = ROOT / "static" / "gallery"
 NO_STORE = {"Cache-Control": "no-store"}
 
 
@@ -65,7 +73,7 @@ def purge_expired():
     for lock, counts in zip(LOCKS, COUNTS):
         if lock.acquire(blocking=False):
             try:
-                expired = [session for session, (_, until) in counts.items() if until <= now]
+                expired = [session for session, (_, until, _) in counts.items() if until <= now]
                 for session in expired:
                     del counts[session]
             finally:
@@ -74,6 +82,7 @@ def purge_expired():
 
 @asynccontextmanager
 async def lifespan(_app):
+    model()
     TMP.mkdir(parents=True, exist_ok=True, mode=0o700)
     stop = threading.Event()
 
@@ -105,7 +114,6 @@ def label_font(size):
 
 
 def stamp(image, placeholder):
-    image.thumbnail((1600, 2300))
     font_size = max(17, round(image.width / 28))
     font = label_font(font_size)
     line_height = font_size + 6
@@ -125,7 +133,7 @@ def stamp(image, placeholder):
     for number, text in enumerate(lines):
         draw.text((12, image.height + 10 + number * line_height), text, fill="white", font=font)
     buffer = io.BytesIO()
-    canvas.save(buffer, "JPEG", quality=94)
+    canvas.save(buffer, "PNG")
     return buffer.getvalue()
 
 
@@ -143,6 +151,82 @@ def error(message, status, **fields):
     return JSONResponse({"error": message, **fields}, status, headers=NO_STORE)
 
 
+def reserve_render():
+    """Reserve a UTC-day slot before contacting a model, including failed calls."""
+    today = datetime.now(timezone.utc).date().isoformat()
+    with LOG_LOCK:
+        try:
+            state = json.loads(DAILY_LEDGER.read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            state = {}
+        count = state["count"] if state.get("date") == today else 0
+        if count >= DAILY_CAP:
+            return False
+        temporary = DAILY_LEDGER.with_suffix(".tmp")
+        temporary.write_text(json.dumps({"date": today, "count": count + 1}), encoding="utf-8")
+        temporary.replace(DAILY_LEDGER)
+        return True
+
+
+@app.get("/api/metrics")
+def metrics():
+    with LOG_LOCK:
+        if not LOG.exists():
+            rows = []
+        else:
+            with LOG.open(encoding="utf-8", newline="") as stream:
+                rows = list(csv.DictReader(stream))
+    successful = [r for r in rows if r["mock"] == "False"]
+    times = [float(r["latency_s"]) for r in successful]
+    costs = [float(r["cost_inr"]) for r in successful if r["cost_inr"]]
+    hourly = float(os.getenv("TRYON_ESTIMATED_GPU_HOUR_INR") or 0)
+    estimate = float(np.mean(times) * hourly / 3600) if not costs and hourly > 0 and times else None
+    return {
+        "attempts": len(rows), "renders": len(times),
+        "p50_latency_s": float(np.percentile(times, 50)) if times else None,
+        "p95_latency_s": float(np.percentile(times, 95)) if times else None,
+        "latency_scope": "server inference pipeline",
+        "measured_cost_count": len(costs),
+        "average_cost_inr": sum(costs) / len(costs) if costs else None,
+        "estimated_cost_inr": estimate,
+        "estimated_gpu_hour_inr": hourly if estimate is not None else None,
+        "cost_basis": ("Estimate assumes one GPU is billed for the entire server render time. "
+                       "Actual billing, cold starts, networking and utilisation can differ."
+                       if estimate is not None else "Provider billing unavailable for unmeasured requests."),
+    }
+
+
+@app.get("/api/gallery")
+def gallery():
+    manifest = GALLERY / "manifest.json"
+    if not manifest.exists():
+        return []
+    entries = json.loads(manifest.read_text(encoding="utf-8"))
+    return [
+        {"case_id": entry["case_id"], "image": "/gallery/" + entry["image"], "label": LABEL}
+        for entry in entries if entry.get("publication_approved") is True
+        and Path(entry["image"]).name == entry["image"]
+        and Path(entry["image"]).suffix.lower() == ".png"
+        and (GALLERY / entry["image"]).resolve().parent == GALLERY.resolve()
+        and (GALLERY / entry["image"]).is_file()
+    ]
+
+
+@app.get("/gallery/{name}")
+def gallery_image(name: str):
+    if not any(entry["image"] == "/gallery/" + name for entry in gallery()):
+        return error("Gallery image not found.", 404)
+    return FileResponse(GALLERY / name, media_type="image/png", headers=NO_STORE)
+
+
+@lru_cache(maxsize=48)
+def prepared_garment(path, modified):
+    with path.open("rb") as stream:
+        image = read_image(stream)
+        image.thumbnail((1024, 1024))
+        return image
+
+
 @app.get("/api/garments")
 def garments():
     return sorted(
@@ -153,25 +237,66 @@ def garments():
 
 @app.get("/api/catalog")
 def catalog():
-    """Real SKUs from static/products/products.json. Variants without an image file are skipped."""
+    """Synthetic catalogue with optional approved garment-only photos per SKU."""
     manifest = PRODUCTS / "products.json"
-    if not manifest.is_file():
-        return JSONResponse([], headers=NO_STORE)
     try:
-        items = json.loads(manifest.read_text(encoding="utf-8"))
+        assets = json.loads(manifest.read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        return JSONResponse([], headers=NO_STORE)
-    out = []
-    for item in items:
-        variants = [
-            {**v, "image": "/products/" + v["image"]}
-            for v in item.get("variants", [])
-            if v.get("image") and (PRODUCTS / v["image"]).resolve().parent == PRODUCTS.resolve()
-            and (PRODUCTS / v["image"]).is_file()
-        ]
-        if variants:
-            out.append({**item, "variants": variants})
-    return JSONResponse(out, headers=NO_STORE)
+        assets = {}
+    colours = {"Green": "#547655", "Cream": "#dfc998", "Red": "#a54646", "Mustard": "#bf8a31",
+               "Teal": "#427e7a", "Black": "#50414f", "Blue": "#4b6898", "Lavender": "#7a64a0",
+               "Sky blue": "#5687a6", "Pink": "#ab6784", "Maroon": "#7e3c52"}
+    items = []
+    for sku, p in model()["products"].items():
+        if p["category"] != "Women · Kurtas":
+            continue
+        variant = {"sku": sku, "colour": p["colour"], "hex": colours.get(p["colour"], "#967087")}
+        filename = assets.get(sku)
+        if isinstance(filename, str) and Path(filename).name == filename and (PRODUCTS / filename).is_file():
+            variant["image"] = "/products/" + filename
+        items.append({"sku_id": sku, "brand": p["brand"], "name": p["product_name"],
+                      "fit": p["fit_type"], "price": p["mrp_inr"], "variants": [variant]})
+    return JSONResponse(items, headers=NO_STORE)
+
+
+class RecommendationInput(BaseModel):
+    test_id: str | None = None
+    customer_id: str | None = None
+    sku_id: str | None = None
+    usual_size: str | None = None
+    usual_brand: str | None = None
+    fit_preference: float = Field(0, ge=-.5, le=.5)
+    consent_measurements: bool = False
+    bust: float | None = Field(None, ge=50, le=180)
+    waist: float | None = Field(None, ge=45, le=180)
+    hip: float | None = Field(None, ge=55, le=190)
+
+
+@app.post("/api/recommend")
+def recommend(request: RecommendationInput):
+    state = model()
+    base = state["predictions"].get(request.test_id)
+    if request.test_id and not base:
+        return error("That test case was not found.", 404)
+    if base and not (request.usual_size or request.consent_measurements or request.fit_preference):
+        return JSONResponse({k:v for k,v in base.items() if k != "customer_id"}, headers=NO_STORE)
+    sku = base["sku_id"] if base else request.sku_id
+    product = state["products"].get(sku)
+    if not product:
+        return error("Choose a product or enter its SKU.", 404)
+    customer = base["customer_id"] if base else request.customer_id
+    profile = state["profiles"].get(customer, {}).get(product["category"])
+    if customer and not base and customer not in state["profiles"]:
+        return error("That synthetic customer was not found.", 404)
+    dimensions = {key:getattr(request,key) for key in ("bust","waist","hip")
+                  if request.consent_measurements and getattr(request,key) is not None}
+    return JSONResponse(predict(state,product,profile,request.usual_size,request.usual_brand,
+                                request.fit_preference,dimensions), headers=NO_STORE)
+
+
+@app.get("/api/fit-results")
+def fit_results():
+    return FileResponse(ROOT / "results" / "metrics.json", media_type="application/json")
 
 
 @app.get("/api/tryon-config")
@@ -183,7 +308,9 @@ def tryon_config():
 def tryon(session: str = Form(...), age: int = Form(0), consent_photo: str = Form("false"),
           consent_remote: str = Form(""), team_code: str = Form("", max_length=256),
           desc: str = Form("kurta", max_length=160), garment_name: str = Form(""),
+          sku_id: str = Form("", max_length=80), garment_category: str = Form("one-pieces"),
           photo: UploadFile = File(...), garment: UploadFile | None = File(None)):
+    start = time.perf_counter()
     if consent_photo != "true":
         return error("Photo consent is required.", 403)
     if age < 18:
@@ -197,11 +324,15 @@ def tryon(session: str = Form(...), age: int = Form(0), consent_photo: str = For
             return error("Remote try-on requires team consent and a valid team code.", 403)
     if not canonical_session(session):
         return error("Please reload the page to start a new session.", 422)
+    if garment_category not in {"tops", "bottoms", "one-pieces"}:
+        return error("Choose a supported garment category.", 422, rejected_before_render=True)
 
     stripe = lock_index(session)
     with LOCKS[stripe]:
         counts = COUNTS[stripe]
-        count, until = counts.get(session, (0, 0))
+        count, until, deleted = counts.get(session, (0, 0, False))
+        if deleted and time.time() < until:
+            return error("This photo session was deleted. Start a new preview.", 410)
         if time.time() >= until:
             count = 0
         if count >= MAX_RENDERS:
@@ -221,32 +352,53 @@ def tryon(session: str = Form(...), age: int = Form(0), consent_photo: str = For
         try:
             if garment and garment.filename:
                 item = read_image(garment.file)
+            elif sku_id:
+                product = next((entry for entry in json.loads(catalog().body)
+                                if entry.get("sku_id") == sku_id), None)
+                if not product:
+                    return error("That SKU has no try-on garment image.", 422, rejected_before_render=True)
+                image_url = product["variants"][0].get("image")
+                if not image_url:
+                    return error("Upload a flat-lay or mannequin garment photo for this SKU.", 422, rejected_before_render=True)
+                path = PRODUCTS / Path(image_url).name
+                item = prepared_garment(path, path.stat().st_mtime_ns).copy()
             elif garment_name in garments():
-                with (GARMENTS / garment_name).open("rb") as stream:
-                    item = read_image(stream)
+                path = GARMENTS / garment_name
+                item = prepared_garment(path, path.stat().st_mtime_ns).copy()
             else:
                 return error("Please choose or upload a kurta image.", 422, rejected_before_render=True)
         except (OSError, ValueError, Image.DecompressionBombError):
             return error("Please upload a readable kurta JPG, PNG or WebP under 12 MB.",
                          422, rejected_before_render=True)
 
+        try:
+            if not reserve_render():
+                return error("Today's preview limit has been reached. You can still browse examples.", 429)
+        except (OSError, ValueError, KeyError):
+            return error("Try-on is temporarily unavailable. You can still browse examples.", 503)
+        counts[session] = (count + 1, time.time() + PURGE_S, False)
         folder = TMP / session
         folder.mkdir(exist_ok=True, mode=0o700)
-        start = time.perf_counter()
-        output, placeholder_reason = run_model(person, item, desc, folder)
-        elapsed = round(time.perf_counter() - start, 3)
+        output, placeholder_reason = run_model(person, item, desc, folder, garment_category)
         mock = placeholder_reason is not None
         # Explicit mock mode does not contact a provider. Other attempts may have incurred a charge.
         cost = 0 if placeholder_reason == "mock_mode" else None
+        if mock and placeholder_reason != "mock_mode":
+            elapsed = round(time.perf_counter() - start, 3)
+            log(elapsed, cost, mock)
+            if not any(folder.iterdir()):
+                folder.rmdir()
+            return error("The model could not make a reliable preview. Try again or browse the sample gallery.",
+                         503, placeholder_reason=placeholder_reason, latency_s=elapsed)
         preview = stamp(output, mock)
         temporary = folder / "result.tmp"
         temporary.write_bytes(preview)
-        temporary.replace(folder / "result.jpg")
+        temporary.replace(folder / "result.png")
         os.utime(folder, None)
-        counts[session] = (count + 1, time.time() + PURGE_S)
+        elapsed = round(time.perf_counter() - start, 3)
         log(elapsed, cost, mock)
         return JSONResponse({
-            "image": "data:image/jpeg;base64," + base64.b64encode(preview).decode("ascii"),
+            "image": "data:image/png;base64," + base64.b64encode(preview).decode("ascii"),
             "mock": mock, "placeholder_reason": placeholder_reason, "label": LABEL,
             "latency_s": elapsed, "cost_inr": cost, "renders_used": count + 1,
         }, headers=NO_STORE)
@@ -256,13 +408,15 @@ def tryon(session: str = Form(...), age: int = Form(0), consent_photo: str = For
 def delete(session: str = Form(...)):
     if not canonical_session(session):
         return error("Invalid session.", 422)
-    with LOCKS[lock_index(session)]:
+    stripe = lock_index(session)
+    with LOCKS[stripe]:
         try:
             shutil.rmtree(TMP / session)
         except FileNotFoundError:
             pass
         except OSError:
             return error("Server deletion failed. Please try again.", 503)
+        COUNTS[stripe][session] = (0, time.time() + PURGE_S, True)
     return JSONResponse({"deleted": True}, headers=NO_STORE)
 
 

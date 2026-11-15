@@ -8,3 +8,6 @@ photos
 render_log.csv
 *.task
 *.tflite
+data
+renders
+tryon-daily.json

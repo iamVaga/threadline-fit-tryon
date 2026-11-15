@@ -7,3 +7,7 @@ photos/
 *.xlsx
 *.task
 *.tflite
+data/
+renders/
+tryon-daily.json
+models/

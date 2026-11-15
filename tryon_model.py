@@ -43,6 +43,9 @@ def check_photo(image):
 
     reduced = image.copy()
     reduced.thumbnail((960, 1280))
+    light = np.asarray(reduced.convert("L"))
+    if np.percentile(light, 75) < 48 or np.percentile(light, 90) - np.percentile(light, 10) < 16:
+        return "Please retake the photo with even light from the front and a clear background."
     options = mp.tasks.vision.PoseLandmarkerOptions(
         base_options=mp.tasks.BaseOptions(model_asset_path=str(POSE_MODEL)),
         num_poses=2,
@@ -58,15 +61,25 @@ def check_photo(image):
         return "Please retake the photo with just one person in the frame."
 
     pose = poses[0]
-    # The kurta covers shoulders to hips, so only the torso has to be in frame and visible.
-    # Head and feet may be cropped.
-    torso_missing = any(
-        not (0.0 < pose[index].x < 1.0 and 0.0 < pose[index].y < 1.0
+    required = (0, 2, 5, 11, 12, 23, 24, 29, 30, 31, 32)
+    if any(
+        not (0.02 < pose[index].x < 0.98 and 0.025 < pose[index].y < 0.975
              and pose[index].visibility >= 0.5 and pose[index].presence >= 0.5)
-        for index in (11, 12, 23, 24)  # shoulders and hips
-    )
-    if torso_missing:
-        return "Please retake the photo so your shoulders and hips are clearly visible."
+        for index in required
+    ):
+        return "Step back and retake the photo with your whole head and both feet visible."
+    foreground = result.segmentation_masks[0].numpy_view().squeeze() > 0.55
+    ys, _ = np.where(foreground)
+    if not ys.size or ys.min() < foreground.shape[0] * .015 or ys.max() >= foreground.shape[0] * .985:
+        return "Leave a little space above your head and below your feet, then retake."
+    for heel, toe in ((29, 31), (30, 32)):
+        evidence = []
+        for index in (heel, toe):
+            y = round(pose[index].y * (foreground.shape[0] - 1))
+            x = round(pose[index].x * (foreground.shape[1] - 1))
+            evidence.append(foreground[y-4:y+5, x-4:x+5].mean())
+        if max(evidence) < .3:
+            return "Please retake with both feet visible and uncovered."
     return None
 
 
@@ -76,14 +89,16 @@ def clothing_mask(segmenter, image):
     # so a higher threshold finds no clothing at all.
     confidence = result.confidence_masks[4].numpy_view()
     mask = Image.fromarray(np.where(confidence.squeeze() >= 0.5, 255, 0).astype(np.uint8))
-    return mask.filter(ImageFilter.MaxFilter(5))  # slight grow so no sliver of the old garment survives
+    return mask.filter(ImageFilter.MinFilter(5))
 
 
 def remote_backend():
     if os.getenv("TRYON_REMOTE") != "1" or os.getenv("MOCK") == "1":
         return None
-    backend = os.getenv("TRYON_BACKEND", "hf")
-    return backend if backend in {"hf", "replicate", "gemini"} else None
+    backend = os.getenv("TRYON_BACKEND", "local_http")
+    if backend == "gemini":
+        return backend if os.getenv("ALLOW_GEMINI_PHOTOS") == "1" else None
+    return backend if backend in {"local_http", "hf", "replicate"} else None
 
 
 def person_crop_box(image):
@@ -114,12 +129,13 @@ def person_crop_box(image):
     return (int(x0), int(y0), int(x0 + box_w), int(y0 + box_h))
 
 
-def run_model(person, garment, desc, session_folder):
+def run_model(person, garment, desc, session_folder, category="one-pieces"):
     """Return the original with a reason whenever real inference is unavailable."""
     if os.getenv("MOCK") == "1":
         return person, "mock_mode"
     backend = remote_backend()
-    token_name = {"hf": "HF_TOKEN", "replicate": "REPLICATE_API_TOKEN", "gemini": "GEMINI_API_KEY"}.get(backend)
+    token_name = {"local_http": "TRYON_HTTP_TOKEN", "hf": "HF_TOKEN",
+                  "replicate": "REPLICATE_API_TOKEN", "gemini": "GEMINI_API_KEY"}.get(backend)
     token = os.getenv(token_name, "") if token_name else ""
     if not token:
         return person, "model_unavailable"
@@ -128,9 +144,9 @@ def run_model(person, garment, desc, session_folder):
     except Exception:
         box = None
     if not box:
-        return _run_on(person, garment, desc, session_folder, backend, token)
+        return _run_on(person, garment, desc, session_folder, backend, token, category)
     # Work on a close crop so the model sees the person at useful resolution, then paste it back.
-    result, reason = _run_on(person.crop(box), garment, desc, session_folder, backend, token)
+    result, reason = _run_on(person.crop(box), garment, desc, session_folder, backend, token, category)
     if reason:
         return person, reason
     full = person.copy()
@@ -138,7 +154,7 @@ def run_model(person, garment, desc, session_folder):
     return full, None
 
 
-def _run_on(person, garment, desc, session_folder, backend, token):
+def _run_on(person, garment, desc, session_folder, backend, token, category):
     try:
         if backend == "gemini":
             # Gemini takes any aspect ratio, so send the photo as-is (no padding).
@@ -174,25 +190,57 @@ def _run_on(person, garment, desc, session_folder, backend, token):
                     if abs(generated.width / generated.height - size[0] / size[1]) > 0.03:
                         return person, "preservation_check"
                     generated = generated.resize(size, Image.LANCZOS)
+                elif backend == "local_http":
+                    generated = local_http_tryon(person_path, garment_path, desc, token, category)
                 else:
                     generated = replicate_tryon(person_path, garment_path, desc, token)
             if generated.size != size:
                 return person, "preservation_check"
-            # Union: replace wherever the old OR the new kurta is, and nowhere else.
-            mask = ImageChops.lighter(original_mask, clothing_mask(segmenter, generated))
+            mask = ImageChops.multiply(original_mask, clothing_mask(segmenter, generated))
             if not mask.getbbox():
                 return person, "preservation_check"
             # Paste only the new kurta pixels onto the ORIGINAL full-resolution photo, so every
             # pixel outside the kurta is byte-for-byte the user's own.
-            mask = mask.crop(box).resize(person.size, Image.LANCZOS).filter(ImageFilter.GaussianBlur(0.8))
+            mask = mask.crop(box).resize(person.size, Image.NEAREST)
             generated = generated.crop(box).resize(person.size, Image.LANCZOS)
-            return Image.composite(generated, person, mask), None
+            return composite_preserving_source(person, generated, mask), None
     except httpx.HTTPStatusError as error:
         # Only the status code is surfaced; the body can echo request details.
         return person, "quota_exceeded" if error.response.status_code == 429 else "model_unavailable"
     except Exception:
         # Provider exceptions can include file paths, signed URLs or upstream input.
         return person, "model_unavailable"
+
+
+def composite_preserving_source(person, generated, mask):
+    """Only copy generated pixels at positive entries in the binary garment mask."""
+    if person.size != generated.size or person.size != mask.size:
+        raise ValueError("Composite inputs have different dimensions")
+    return Image.composite(generated, person, mask.point(lambda value: 255 if value == 255 else 0))
+
+
+def local_http_tryon(person, garment, desc, token, category):
+    url = os.getenv("TRYON_HTTP_URL", "")
+    parsed = httpx.URL(url)
+    if parsed.scheme != "https" and not (parsed.scheme == "http" and parsed.host in {"127.0.0.1", "localhost"}):
+        raise ValueError("Use HTTPS for a remote model endpoint")
+    return request_model(url, person, garment, desc, token, category)
+
+
+def request_model(url, person, garment, desc, token, category="one-pieces"):
+    with person.open("rb") as photo, garment.open("rb") as item:
+        with httpx.stream("POST", url, headers={"Authorization": f"Bearer {token}"},
+                          data={"description": desc, "category": category}, files={"person": photo, "garment": item},
+                          timeout=90) as response:
+            response.raise_for_status()
+            buffer = io.BytesIO()
+            for chunk in response.iter_bytes():
+                if buffer.tell() + len(chunk) > MAX_UPLOAD:
+                    raise ValueError("Model image exceeded size limit")
+                buffer.write(chunk)
+            buffer.seek(0)
+            image = read_image(buffer)
+    return image
 
 
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta"

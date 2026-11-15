@@ -108,7 +108,7 @@ def evaluate(args):
                 continue
             sheet.cell(row, columns[LATENCY]).value = payload["latency_s"]
             sheet.cell(row, columns[COST]).value = costs.get(row, payload["cost_inr"])
-            print(f"Row {row}: preview saved in server TMP_DIR/{session}/result.jpg")
+            print(f"Row {row}: preview saved in server TMP_DIR/{session}/result.png")
     book.save(args.output)
     print(f"Saved workbook. {failures} cases could not be rendered.")
     return 1 if failures else 0
