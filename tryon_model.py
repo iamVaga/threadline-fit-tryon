@@ -264,7 +264,7 @@ def clothing_mask(segmenter, image):
 def upper_body_masks(image):
     """Body-based regions for a top, from pose landmarks (not from the clothes being worn).
 
-    Returns (zone, body) or None. `zone` is the band from just above the shoulders to just below the hips.
+    Returns (zone, body, below) or None. `zone` is the band from just above the shoulders to just below the hips.
     `body` is the torso plus upper arms (shoulder to ~75% of the way to the elbow) inside that band.
     """
     pose = detect_pose(image)
@@ -274,25 +274,35 @@ def upper_body_masks(image):
     pt = lambda i: (pose[i].x * w, pose[i].y * h)
     (lsx, lsy), (rsx, rsy), (lhx, lhy), (rhx, rhy) = pt(11), pt(12), pt(23), pt(24)
     shoulder_w = math.hypot(lsx - rsx, lsy - rsy)
-    top_y = min(lsy, rsy) - 0.12 * (min(lhy, rhy) - max(lsy, rsy))
+    top_y = min(lsy, rsy) - 0.12 * (max(lhy, rhy) - min(lsy, rsy))
     bottom_y = max(lhy, rhy) + 0.12 * (max(lhy, rhy) - min(lsy, rsy))
     zone = Image.new("L", image.size, 0)
     ImageDraw.Draw(zone).rectangle((0, max(0, top_y), w, min(h, bottom_y)), fill=255)
     body = Image.new("L", image.size, 0)
     draw = ImageDraw.Draw(body)
-    grow = shoulder_w * 0.12  # a little outward margin so a looser shirt fits
-    draw.polygon([(lsx - (grow if lsx < rsx else -grow), lsy), (rsx - (grow if rsx < lsx else -grow), rsy),
-                  (rhx - (grow if rhx < lhx else -grow), rhy), (lhx - (grow if lhx < rhx else -grow), lhy)], fill=255)
-    width = max(16, int(shoulder_w * 0.36))
+    torso = max(lhy, rhy) - min(lsy, rsy)
+    left, right = sorted(((lsx, lsy), (rsx, rsy)))
+    lh, rh = sorted(((lhx, lhy), (rhx, rhy)))
+    out, up = shoulder_w * 0.22, torso * 0.07   # cover the shoulder slope and old straps, stay below the chin
+    cx, cy = (left[0] + right[0]) / 2, (left[1] + right[1]) / 2
+    neck = shoulder_w * 0.2
+    # The top edge dips around the neck so the model's neck skin is not pasted over your own.
+    draw.polygon([(left[0] - out, left[1] - up), (cx - neck, cy + torso * 0.03), (cx + neck, cy + torso * 0.03),
+                  (right[0] + out, right[1] - up),
+                  (right[0] + out * 0.8, right[1] + torso * 0.25), (rh[0] + out * 0.5, rh[1]),
+                  (lh[0] - out * 0.5, lh[1]), (left[0] - out * 0.8, left[1] + torso * 0.25)], fill=255)
+    below = Image.new("L", image.size, 0)  # where a longer shirt hem may fall over the skirt or trousers
+    ImageDraw.Draw(below).polygon([(lh[0] - out, lh[1]), (rh[0] + out, rh[1]),
+                                   (rh[0] + out, rh[1] + torso * 0.4), (lh[0] - out, lh[1] + torso * 0.4)], fill=255)
+    width = max(18, int(shoulder_w * 0.46))
     for shoulder, elbow in ((11, 13), (12, 14)):
-        if pose[elbow].visibility < 0.4:
-            continue
         sx, sy = pt(shoulder)
-        ex, ey = sx + (pose[elbow].x * w - sx) * 0.75, sy + (pose[elbow].y * h - sy) * 0.75
+        ex, ey = (pose[elbow].x * w, pose[elbow].y * h) if pose[elbow].visibility >= 0.4 else (sx, sy + torso * 0.45)
+        ex, ey = sx + (ex - sx) * 0.75, sy + (ey - sy) * 0.75
         draw.line((sx, sy, ex, ey), fill=255, width=width)
         for x, y in ((sx, sy), (ex, ey)):
             draw.ellipse((x - width / 2, y - width / 2, x + width / 2, y + width / 2), fill=255)
-    return zone, ImageChops.darker(body, zone)
+    return zone, ImageChops.darker(body, zone), below
 
 
 def remote_backend():
@@ -394,11 +404,14 @@ def _run_on(person, garment, desc, session_folder, backend, token, category):
                 return person, "preservation_check"
             generated_clothing = clothing_mask(segmenter, generated)
             if body_regions:
-                # Tops follow the body: the old top is replaced inside the upper-body band, and the new top
-                # may also cover bare torso and upper arms wherever the result really shows clothing there.
-                zone, body = body_regions
-                grown = generated_clothing.filter(ImageFilter.MaxFilter(7))
-                mask = ImageChops.lighter(ImageChops.darker(original_mask, zone), ImageChops.darker(body, grown))
+                # Tops follow the body, not the old clothes: the whole shoulder-torso-upper-arm region is taken
+                # from the model, so a sleeved shirt can replace a sleeveless top (and straps) completely.
+                zone, body, below = body_regions
+                mask = ImageChops.lighter(ImageChops.darker(original_mask, zone), body)
+                # Below the hips only take pixels the model really changed (the shirt hem over the skirt).
+                changed = ImageChops.difference(padded.convert("RGB"), generated.convert("RGB")).convert("L")
+                changed = changed.point(lambda v: 255 if v > 45 else 0).filter(ImageFilter.MaxFilter(5))
+                mask = ImageChops.lighter(mask, ImageChops.darker(below, changed))
             else:
                 mask = ImageChops.multiply(original_mask, generated_clothing)
             if not mask.getbbox():
