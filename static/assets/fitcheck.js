@@ -681,6 +681,20 @@ function loadPhotoConfig() {
     sync();
   });
 }
+// The hosting tier restarts the app now and then. Retry network failures and gateway errors (502/504)
+// a couple of times before telling the user; real answers from the app (even errors) are never retried.
+async function postWithRetry(url, body) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const response = await fetch(url, {method: 'POST', body});
+      if (![502, 504].includes(response.status) || attempt >= 2) return response;
+    } catch (error) {
+      if (attempt >= 2) throw error;
+    }
+    $('msg').textContent = 'The preview service is waking up. Retrying…';
+    await new Promise(resolve => setTimeout(resolve, 8000));
+  }
+}
 $('rn').onclick = async () => {
   if ($('rn').disabled) return;
   clearPreview();
@@ -710,7 +724,7 @@ $('rn').onclick = async () => {
   renderProgress(true);
   pendingRender = (async () => {
     try {
-      const response = await fetch('/api/tryon', {method: 'POST', body});
+      const response = await postWithRetry('/api/tryon', body);
       const result = await response.json();
       if (requestGeneration !== generation) return;
       if (!response.ok) {

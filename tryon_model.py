@@ -3,7 +3,9 @@ import base64
 import io
 import math
 import os
+import threading
 import time
+from contextlib import contextmanager
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -21,30 +23,75 @@ Image.MAX_IMAGE_PIXELS = 25_000_000
 os.environ["GRADIO_ANALYTICS_ENABLED"] = "False"
 
 
-def read_image(stream):
+def read_image(stream, max_side=None):
     data = stream.read(MAX_UPLOAD + 1)
     if len(data) > MAX_UPLOAD:
         raise ValueError("Image too large")
     with Image.open(io.BytesIO(data), formats=("JPEG", "PNG", "WEBP")) as source:
         if source.width * source.height > Image.MAX_IMAGE_PIXELS:
             raise ValueError("Too many pixels")
-        return ImageOps.exif_transpose(source).convert("RGB")
+        if max_side:
+            # JPEGs can decode at 1/2, 1/4 or 1/8 size. draft() needs the exact target box, not a square.
+            scale = max_side / max(source.size)
+            if scale < 1:
+                source.draft("RGB", (max(1, int(source.width * scale)), max(1, int(source.height * scale))))
+        image = ImageOps.exif_transpose(source).convert("RGB")
+        if max_side:
+            image.thumbnail((max_side, max_side))
+        return image
 
 
 def mp_image(image):
     return mp.Image(image_format=mp.ImageFormat.SRGB, data=np.asarray(image))
 
 
+_POSE = None
+_POSE_LOCK = threading.Lock()
+
+
 def detect_pose(image):
-    """First pose's landmarks for a (reduced) copy of the image, or None."""
+    """First pose's landmarks for a (reduced) copy of the image, or None.
+
+    The landmarker is created once and reused: loading it per call costs memory and time, and the
+    free hosting tier has only 512 MB.
+    """
+    global _POSE
     reduced = image.copy()
     reduced.thumbnail((960, 1280))
-    options = mp.tasks.vision.PoseLandmarkerOptions(
-        base_options=mp.tasks.BaseOptions(model_asset_path=str(POSE_MODEL)),
-        num_poses=1, min_pose_detection_confidence=0.4)
-    with mp.tasks.vision.PoseLandmarker.create_from_options(options) as detector:
-        poses = detector.detect(mp_image(reduced)).pose_landmarks
+    with _POSE_LOCK:
+        if _POSE is None:
+            _POSE = mp.tasks.vision.PoseLandmarker.create_from_options(mp.tasks.vision.PoseLandmarkerOptions(
+                base_options=mp.tasks.BaseOptions(model_asset_path=str(POSE_MODEL)),
+                num_poses=1, min_pose_detection_confidence=0.4))
+        poses = _POSE.detect(mp_image(reduced)).pose_landmarks
     return poses[0] if poses else None
+
+
+_CHECKER = None
+_SEGMENTER = None
+_SEG_LOCK = threading.Lock()
+
+
+def detect_with_masks(image):
+    """Up to two poses plus a person mask, using one shared landmarker."""
+    global _CHECKER
+    with _POSE_LOCK:
+        if _CHECKER is None:
+            _CHECKER = mp.tasks.vision.PoseLandmarker.create_from_options(mp.tasks.vision.PoseLandmarkerOptions(
+                base_options=mp.tasks.BaseOptions(model_asset_path=str(POSE_MODEL)),
+                num_poses=2, min_pose_detection_confidence=0.4, output_segmentation_masks=True))
+        return _CHECKER.detect(mp_image(image))
+
+
+@contextmanager
+def shared_segmenter():
+    """The clothing segmenter, created once. Holding it also runs one try-on at a time (memory)."""
+    global _SEGMENTER
+    with _SEG_LOCK:
+        if _SEGMENTER is None:
+            _SEGMENTER = mp.tasks.vision.ImageSegmenter.create_from_options(mp.tasks.vision.ImageSegmenterOptions(
+                base_options=mp.tasks.BaseOptions(model_asset_path=str(SEGMENT_MODEL))))
+        yield _SEGMENTER
 
 
 def _upright_score(pose):
@@ -175,14 +222,7 @@ def check_photo(image, category="one-pieces"):
     light = np.asarray(reduced.convert("L"))
     if np.percentile(light, 75) < 48 or np.percentile(light, 90) - np.percentile(light, 10) < 16:
         return "Please retake the photo with even light from the front and a clear background."
-    options = mp.tasks.vision.PoseLandmarkerOptions(
-        base_options=mp.tasks.BaseOptions(model_asset_path=str(POSE_MODEL)),
-        num_poses=2,
-        min_pose_detection_confidence=0.4,
-        output_segmentation_masks=True,
-    )
-    with mp.tasks.vision.PoseLandmarker.create_from_options(options) as detector:
-        result = detector.detect(mp_image(reduced))
+    result = detect_with_masks(reduced)
     poses = result.pose_landmarks
     if not poses:
         return "We couldn't find a person. Please retake the photo in good light with one person in the frame."
@@ -266,15 +306,10 @@ def remote_backend():
 
 def person_crop_box(image):
     """Box around the person (3:4, with margin) when they are small in the frame, else None."""
-    reduced = image.copy()
-    reduced.thumbnail((960, 1280))
-    options = mp.tasks.vision.PoseLandmarkerOptions(
-        base_options=mp.tasks.BaseOptions(model_asset_path=str(POSE_MODEL)),
-        num_poses=1, min_pose_detection_confidence=0.4)
-    with mp.tasks.vision.PoseLandmarker.create_from_options(options) as detector:
-        poses = detector.detect(mp_image(reduced)).pose_landmarks
-    if not poses:
+    pose = detect_pose(image)
+    if not pose:
         return None
+    poses = [pose]
     xs = [p.x for p in poses[0]]
     ys = [p.y for p in poses[0]]
     width, height = image.size
@@ -333,10 +368,7 @@ def _run_on(person, garment, desc, session_folder, backend, token, category):
             box = (x, y, x + fitted.width, y + fitted.height)
             padded = Image.new("RGB", size, (235, 235, 235))
             padded.paste(fitted, (x, y))
-        options = mp.tasks.vision.ImageSegmenterOptions(
-            base_options=mp.tasks.BaseOptions(model_asset_path=str(SEGMENT_MODEL)),
-        )
-        with mp.tasks.vision.ImageSegmenter.create_from_options(options) as segmenter:
+        with shared_segmenter() as segmenter:
             original_mask = clothing_mask(segmenter, padded)
             if not original_mask.getbbox():
                 return person, "preservation_check"

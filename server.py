@@ -1,5 +1,7 @@
 """FitCheck Fit & Try-On API."""
 import base64
+import ctypes
+import gc
 import csv
 from datetime import datetime, timezone
 from functools import lru_cache
@@ -156,6 +158,15 @@ def log(secs, cost, mock):
             if new:
                 writer.writerow(["latency_s", "cost_inr", "mock"])
             writer.writerow([secs, cost, mock])
+
+
+def release_memory():
+    """Hand freed memory back to the OS; the free hosting tier kills the app above 512 MB."""
+    gc.collect()
+    try:
+        ctypes.CDLL("libc.so.6").malloc_trim(0)
+    except (OSError, AttributeError):
+        pass  # not glibc (for example macOS)
 
 
 def error(message, status, **fields):
@@ -383,7 +394,7 @@ def tryon(session: str = Form(...), age: int = Form(0), consent_photo: str = For
         if count >= MAX_RENDERS:
             return error("You have used all 3 previews for this session.", 429)
         try:
-            person = read_image(photo.file)
+            person = read_image(photo.file, 1600)  # the model works near 768x1024; more pixels only cost memory
         except (OSError, ValueError, Image.DecompressionBombError):
             return error("Please retake the photo and upload a JPG, PNG or WebP under 12 MB.",
                          422, rejected_before_render=True)
@@ -427,7 +438,10 @@ def tryon(session: str = Form(...), age: int = Form(0), consent_photo: str = For
         counts[session] = (count + 1, time.time() + PURGE_S, False)
         folder = TMP / session
         folder.mkdir(exist_ok=True, mode=0o700)
-        output, placeholder_reason = run_model(person, item, desc, folder, garment_category)
+        try:
+            output, placeholder_reason = run_model(person, item, desc, folder, garment_category)
+        finally:
+            release_memory()
         if ops and placeholder_reason is None:
             output = restore_to_original(original_photo, person, output, ops)
         mock = placeholder_reason is not None
