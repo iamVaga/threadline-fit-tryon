@@ -452,8 +452,11 @@ def tryon(session: str = Form(...), age: int = Form(0), consent_photo: str = For
             log(elapsed, cost, mock)
             if not any(folder.iterdir()):
                 folder.rmdir()
-            return error("The model could not make a reliable preview. Try again or browse the sample gallery.",
-                         503, placeholder_reason=placeholder_reason, latency_s=elapsed)
+            message = {
+                "quota_exceeded": "The free try-on service has hit its usage limit for now. Please try again later.",
+                "auth_failed": "The try-on service rejected the server's access token. The site owner needs to check it.",
+            }.get(placeholder_reason, "The model could not make a reliable preview. Try again or browse the sample gallery.")
+            return error(message, 503, placeholder_reason=placeholder_reason, latency_s=elapsed)
         preview = stamp(output, mock)
         temporary = folder / "result.tmp"
         temporary.write_bytes(preview)

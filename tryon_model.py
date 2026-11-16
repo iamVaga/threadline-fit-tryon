@@ -411,8 +411,15 @@ def _run_on(person, garment, desc, session_folder, backend, token, category):
     except httpx.HTTPStatusError as error:
         # Only the status code is surfaced; the body can echo request details.
         return person, "quota_exceeded" if error.response.status_code == 429 else "model_unavailable"
-    except Exception:
-        # Provider exceptions can include file paths, signed URLs or upstream input.
+    except Exception as error:
+        # Provider exceptions can include file paths, signed URLs or upstream input, so only the class
+        # and a trimmed message go to the server log, never to the user.
+        text = str(error).lower()
+        print(f"Try-on backend failed: {type(error).__name__}: {str(error)[:300]}")
+        if "quota" in text or "exceeded" in text or "too many requests" in text:
+            return person, "quota_exceeded"
+        if "unauthorized" in text or "401" in text or "invalid" in text and "token" in text:
+            return person, "auth_failed"
         return person, "model_unavailable"
 
 
